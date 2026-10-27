@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brokeville 2 — Map Preview</title>
+<style>
+:root{color-scheme:dark;--bg:#10151c;--panel:#1a222d;--line:#344152;--text:#e8edf3;--muted:#aab7c7;--accent:#f05272}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+header{padding:18px clamp(14px,3vw,30px);border-bottom:1px solid var(--line);background:#141b24}
+h1{font-size:clamp(22px,3vw,32px);margin:0 0 5px}p{margin:5px 0;color:var(--muted)}
+main{padding:16px;max-width:1500px;margin:auto}.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:14px}
+button{background:#263445;border:1px solid #46586e;color:var(--text);padding:9px 12px;border-radius:8px;font:inherit;cursor:pointer}button:hover{background:#33475e}
+label{display:flex;align-items:center;gap:7px;color:var(--muted)}input[type=range]{width:125px}
+.viewer{position:relative;width:100%;background:#0a0e13;border:1px solid var(--line);border-radius:10px;overflow:auto;max-height:78vh}
+.canvas{position:relative;width:100%;min-width:650px;line-height:0}.canvas img{display:block;width:100%;height:auto}.overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.grid{opacity:.75}.coords{font: bold 10px monospace;fill:#b91c1c;paint-order:stroke;stroke:white;stroke-width:2px;stroke-linejoin:round}
+.note{margin-top:12px;padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;color:var(--muted)}
+.status{margin-left:auto;font-size:13px;color:#9ed7b0}.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;color:var(--muted);font-size:13px}
+@media(max-width:650px){main{padding:10px}.status{width:100%;margin-left:0}.toolbar{gap:8px}.viewer{max-height:72vh}}
+</style>
+</head>
+<body>
+<header><h1>Brokeville 2 — просмотр карты</h1><p>Первый запуск: исходный чертёж и координатная сетка для будущей точной обводки.</p></header>
+<main>
+  <div class="toolbar">
+    <button id="toggleGrid">Скрыть сетку</button>
+    <label>Прозрачность <input id="opacity" type="range" min="10" max="100" value="75"></label>
+    <button id="reset">Сбросить вид</button>
+    <a href="https://files.catbox.moe/7pq1fv.jpeg" target="_blank" rel="noopener" style="color:#a9c9ff">Открыть оригинал ↗</a>
+    <span class="status">PREVIEW · НЕ ФИНАЛЬНАЯ КАРТА</span>
+  </div>
+  <div class="viewer" id="viewer"><div class="canvas" id="canvas">
+    <img id="source" src="https://files.catbox.moe/7pq1fv.jpeg" alt="Исходная схема города Brokeville 2">
+    <svg class="overlay grid" id="grid" viewBox="0 0 1000 536" preserveAspectRatio="none" aria-hidden="true">
+      <g fill="none" stroke="#e11d48" stroke-width=".65">
+        <line x1="50" y1="0" x2="50" y2="536"/><line x1="100" y1="0" x2="100" y2="536"/><line x1="150" y1="0" x2="150" y2="536"/><line x1="200" y1="0" x2="200" y2="536"/><line x1="250" y1="0" x2="250" y2="536"/><line x1="300" y1="0" x2="300" y2="536"/><line x1="350" y1="0" x2="350" y2="536"/><line x1="400" y1="0" x2="400" y2="536"/><line x1="450" y1="0" x2="450" y2="536"/><line x1="500" y1="0" x2="500" y2="536"/><line x1="550" y1="0" x2="550" y2="536"/><line x1="600" y1="0" x2="600" y2="536"/><line x1="650" y1="0" x2="650" y2="536"/><line x1="700" y1="0" x2="700" y2="536"/><line x1="750" y1="0" x2="750" y2="536"/><line x1="800" y1="0" x2="800" y2="536"/><line x1="850" y1="0" x2="850" y2="536"/><line x1="900" y1="0" x2="900" y2="536"/><line x1="950" y1="0" x2="950" y2="536"/>
+        <line x1="0" y1="50" x2="1000" y2="50"/><line x1="0" y1="100" x2="1000" y2="100"/><line x1="0" y1="150" x2="1000" y2="150"/><line x1="0" y1="200" x2="1000" y2="200"/><line x1="0" y1="250" x2="1000" y2="250"/><line x1="0" y1="300" x2="1000" y2="300"/><line x1="0" y1="350" x2="1000" y2="350"/><line x1="0" y1="400" x2="1000" y2="400"/><line x1="0" y1="450" x2="1000" y2="450"/><line x1="0" y1="500" x2="1000" y2="500"/>
+      </g>
+      <g class="coords">
+        <text x="3" y="12">0</text><text x="53" y="12">50</text><text x="103" y="12">100</text><text x="153" y="12">150</text><text x="203" y="12">200</text><text x="253" y="12">250</text><text x="303" y="12">300</text><text x="353" y="12">350</text><text x="403" y="12">400</text><text x="453" y="12">450</text><text x="503" y="12">500</text><text x="553" y="12">550</text><text x="603" y="12">600</text><text x="653" y="12">650</text><text x="703" y="12">700</text><text x="753" y="12">750</text><text x="803" y="12">800</text><text x="853" y="12">850</text><text x="903" y="12">900</text><text x="953" y="12">950</text>
+        <text x="3" y="24">0</text><text x="3" y="74">50</text><text x="3" y="124">100</text><text x="3" y="174">150</text><text x="3" y="224">200</text><text x="3" y="274">250</text><text x="3" y="324">300</text><text x="3" y="374">350</text><text x="3" y="424">400</text><text x="3" y="474">450</text><text x="3" y="524">500</text>
+      </g>
+      <rect x=".5" y=".5" width="999" height="535" fill="none" stroke="#b91c1c" stroke-width="1"/>
+    </svg>
+  </div></div>
+  <div class="legend"><span>🔴 Сетка: шаг 50 пикселей</span><span>Начало координат: левый верхний угол</span><span>Масштаб мира пока не откалиброван</span></div>
+  <div class="note"><strong>Важно:</strong> сейчас это просмотр исходной схемы с сеткой, а не готовая игровая карта. Следующий этап — обводить берег, реку, дороги, железную дорогу и контуры зданий. Не используем сетку как размеры домов.</div>
+</main>
+<script>
+const grid=document.getElementById('grid'), toggle=document.getElementById('toggleGrid'), opacity=document.getElementById('opacity'), reset=document.getElementById('reset'), canvas=document.getElementById('canvas'), viewer=document.getElementById('viewer');
+let shown=true;
+toggle.addEventListener('click',()=>{shown=!shown;grid.style.display=shown?'block':'none';toggle.textContent=shown?'Скрыть сетку':'Показать сетку'});
+opacity.addEventListener('input',()=>grid.style.opacity=Number(opacity.value)/100);
+reset.addEventListener('click',()=>{shown=true;grid.style.display='block';grid.style.opacity=.75;opacity.value=75;toggle.textContent='Скрыть сетку';viewer.scrollTop=0;viewer.scrollLeft=0;});
+document.getElementById('source').addEventListener('error',()=>{const n=document.createElement('div');n.style.cssText='padding:25px;color:#ffd4dc;line-height:1.5';n.textContent='Не удалось загрузить картинку с внешнего хостинга. Нажми «Открыть оригинал» или сохрани изображение в репозиторий и обнови путь в index.html.';canvas.replaceChildren(n);});
+</script>
+</body>
+</html>
