@@ -9,7 +9,7 @@ on:
       - ".github/workflows/build-pietarsaari-map.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   download:
@@ -42,6 +42,15 @@ jobs:
           PY
       - name: Render styled vector map
         run: python map/tools/render_pietarsaari_map.py
+      - name: Publish SVG preview to repository
+        run: |
+          mkdir -p map/preview
+          cp map/data/pietarsaari_map.svg map/preview/pietarsaari-map.svg
+      - name: Commit updated SVG preview
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Build updated Pietarsaari map preview"
+          file_pattern: map/preview/pietarsaari-map.svg
       - name: Upload map outputs
         uses: actions/upload-artifact@v4
         with:
