@@ -1,0 +1,146 @@
+{
+  "schema": "brokeville-pixel-anchors-v1",
+  "status": "rough reference anchors; verify against original image before finalizing",
+  "canvas": {
+    "width": 1000,
+    "height": 536,
+    "origin": "top-left"
+  },
+  "coordinate_units": "source image pixels",
+  "anchors": [
+    {
+      "id": "northwest_suburban_enclaves",
+      "label": "Northwest Region — Remote Suburban Enclaves",
+      "x": 102,
+      "y": 111,
+      "kind": "district_label"
+    },
+    {
+      "id": "suburban_retail_plaza",
+      "label": "Suburban Retail Plaza",
+      "x": 251,
+      "y": 127,
+      "kind": "landmark"
+    },
+    {
+      "id": "school",
+      "label": "School",
+      "x": 232,
+      "y": 181,
+      "kind": "landmark"
+    },
+    {
+      "id": "west_residential_parks",
+      "label": "Residential Parks — west",
+      "x": 220,
+      "y": 247,
+      "kind": "district_label"
+    },
+    {
+      "id": "university_campus",
+      "label": "University Campus",
+      "x": 354,
+      "y": 208,
+      "kind": "landmark"
+    },
+    {
+      "id": "financial_quarter",
+      "label": "Financial Quarter",
+      "x": 373,
+      "y": 308,
+      "kind": "district_label"
+    },
+    {
+      "id": "harbor_marina",
+      "label": "Bottom-left District — Harbor & Marina",
+      "x": 222,
+      "y": 461,
+      "kind": "district_label"
+    },
+    {
+      "id": "central_district",
+      "label": "Central District",
+      "x": 643,
+      "y": 154,
+      "kind": "district_label"
+    },
+    {
+      "id": "central_transit_hub",
+      "label": "Central Transit Hub",
+      "x": 667,
+      "y": 267,
+      "kind": "landmark"
+    },
+    {
+      "id": "industrial_sector",
+      "label": "Industrial Sector",
+      "x": 493,
+      "y": 423,
+      "kind": "district_label"
+    },
+    {
+      "id": "heavy_manufacturing",
+      "label": "Heavy Manufacturing — Units A–D",
+      "x": 673,
+      "y": 374,
+      "kind": "district_label"
+    },
+    {
+      "id": "automotive_factory",
+      "label": "Automotive Factory",
+      "x": 747,
+      "y": 374,
+      "kind": "landmark"
+    },
+    {
+      "id": "chemical_plant",
+      "label": "Large Chemical Plant (Hazmat)",
+      "x": 802,
+      "y": 321,
+      "kind": "landmark"
+    },
+    {
+      "id": "warehouse_distribution",
+      "label": "Regional Warehouse & Distribution Hub",
+      "x": 687,
+      "y": 405,
+      "kind": "landmark"
+    },
+    {
+      "id": "rail_logistics_terminal",
+      "label": "Rail Logistics Terminal",
+      "x": 592,
+      "y": 458,
+      "kind": "landmark"
+    },
+    {
+      "id": "southeast_industrial",
+      "label": "Southeast Region — Expanded Industrial & Logistics Complex",
+      "x": 715,
+      "y": 480,
+      "kind": "district_label"
+    },
+    {
+      "id": "river_serpentine_mid",
+      "label": "River Serpentine — center reference",
+      "x": 516,
+      "y": 297,
+      "kind": "water_anchor"
+    },
+    {
+      "id": "central_suspension_bridge",
+      "label": "Central Suspension Bridge",
+      "x": 510,
+      "y": 255,
+      "kind": "bridge"
+    },
+    {
+      "id": "grand_ferris_wheel",
+      "label": "Grand Ferris Wheel",
+      "x": 466,
+      "y": 337,
+      "kind": "landmark"
+    }
+  ],
+  "next_step": "Trace each road, shoreline, district boundary, and building footprint as explicit vector geometry. These anchors are not building corners and must not be used as such."
+}
