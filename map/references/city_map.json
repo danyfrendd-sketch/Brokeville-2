@@ -1,0 +1,114 @@
+{
+  "meta": {
+    "source_image": "IMG_1211.jpeg",
+    "image_size_px": [1408, 768],
+    "coordinate_system": "pixels, origin top-left, x right, y down. All coordinates approximate.",
+    "north": "up",
+    "scale": {"px_per_10km": 148, "meters_per_px": 67.6},
+    "note": "Fictional city. Positions are estimated from the picture."
+  },
+
+  "water": {
+    "river_serpentine": {
+      "type": "river",
+      "flows": "from north-west (top) to south-east (bottom)",
+      "centerline": [[390,40],[500,120],[560,200],[660,270],[720,360],[740,470],[790,560],[850,620],[900,660]]
+    },
+    "harbor": {
+      "type": "sea_bay",
+      "bbox": [80,470,530,680],
+      "piers": [
+        {"id": "pier_a_west", "pos": [200,590]},
+        {"id": "pier_b", "pos": [275,545]},
+        {"id": "pier_c_north", "pos": [350,550]},
+        {"id": "pier_a_east", "pos": [445,600]},
+        {"id": "pier_c_south", "pos": [470,665]}
+      ]
+    },
+    "southeast_bay": {"type": "water", "bbox": [1080,420,1180,700]}
+  },
+
+  "bridges": [
+    {"id": "central_suspension_bridge", "from": [690,375], "to": [760,330], "crosses": "river_serpentine", "connects": ["financial_quarter", "downtown_grid_northeast"]}
+  ],
+
+  "highways": [
+    {"id": "H1", "type": "highway", "points": [[295,38],[330,100],[165,310],[70,560],[65,582]], "note": "north-west to harbor"},
+    {"id": "H2", "type": "highway", "points": [[550,38],[338,102],[410,180],[590,718]], "note": "north ring and southern exit"},
+    {"id": "H3", "type": "highway", "points": [[957,38],[800,200],[830,430],[698,645]], "note": "north, then south through industrial sector"},
+    {"id": "H4", "type": "highway", "points": [[1068,210],[1110,300],[1272,333],[1408,333]], "note": "east ring and east exit", "branch": [[1110,333],[1000,500],[800,713]]}
+  ],
+
+  "districts": [
+    {"id": "northwest_suburban_enclaves", "type": "residential_suburban", "bbox": [40,70,240,320], "label": "Northwest Region: Remote Suburban Enclaves"},
+    {"id": "suburban_housing_enclave", "type": "residential_suburban", "bbox": [195,115,310,250], "note": "green area in legend"},
+    {"id": "university_campus", "type": "education", "bbox": [410,205,560,340], "contains": ["stadium"]},
+    {"id": "residential_parks_west", "type": "park_residential", "bbox": [230,320,440,430]},
+    {"id": "residential_parks_north", "type": "park_residential", "bbox": [620,100,780,230]},
+    {"id": "financial_quarter", "type": "commercial_financial", "bbox": [440,370,640,500]},
+    {"id": "downtown_grid_northeast", "type": "dense_urban_grid", "bbox": [700,80,1000,400], "note": "city blocks in a grid, mostly residential and logistics buildings"},
+    {"id": "industrial_sector", "type": "industrial", "bbox": [560,530,780,650]},
+    {"id": "harbor_marina_district", "type": "harbor", "bbox": [80,470,530,680], "label": "Bottom-Left District: Harbor & Marina"},
+    {"id": "southeast_industrial_logistics_complex", "type": "industrial_logistics", "bbox": [820,460,1180,730], "label": "Southeast Region: Expanded Industrial & Logistics Complex"}
+  ],
+
+  "points_of_interest": [
+    {"id": "suburban_retail_plaza", "type": "retail_plaza", "pos": [330,150]},
+    {"id": "school", "type": "school", "pos": [300,250]},
+    {"id": "stadium", "type": "stadium", "pos": [525,275]},
+    {"id": "grand_ferris_wheel", "type": "landmark", "pos": [680,450]},
+    {"id": "central_transit_hub", "type": "bus_and_subway_hub", "pos": [940,350]},
+    {"id": "large_chemical_plant", "type": "chemical_plant", "hazmat": true, "pos": [1030,510], "label": "Large Chemical Plant (HAZMAT)"},
+    {"id": "automotive_factory", "type": "factory", "pos": [1040,570]},
+    {"id": "heavy_manufacturing_units_a_d", "type": "factory", "pos": [940,570]},
+    {"id": "regional_warehouse_distribution_hub", "type": "logistics_warehouse", "pos": [990,620]},
+    {"id": "rail_logistics_terminal", "type": "rail_logistics", "pos": [870,670]}
+  ],
+
+  "regional_retail_store_complexes": [
+    {"pos": [590,52], "near": "H2"},
+    {"pos": [970,70], "near": "H3"},
+    {"pos": [700,693], "near": "H2/H3"}
+  ],
+
+  "subway_stations": [
+    {"id": "remote_suburban_subway_station", "pos": [165,310]},
+    {"id": "harbor_station_west", "pos": [345,457]},
+    {"id": "harbor_station_east", "pos": [513,540]},
+    {"id": "central_transit_hub_station", "pos": [980,385]}
+  ],
+
+  "service_nodes": [
+    {"pos": [1143,303], "near": "H4"},
+    {"pos": [993,472], "near": "chemical_plant"}
+  ],
+
+  "gas_stations": [
+    {"pos": [955,487]}
+  ],
+
+  "power_icons": {
+    "note": "lightning symbols, not in legend; likely electrical substations or hazard markers",
+    "positions": [[1030,275],[1020,305],[1050,305],[605,490],[615,517],[937,505]]
+  },
+
+  "legend": {
+    "suburban_housing_enclaves": "green icon",
+    "suburban_plaza": "outline building",
+    "chemical_plant": "factory icon",
+    "logistics_warehouse": "hatched building",
+    "regional_retail_store": "shopping cart",
+    "service_node": "crossed wrench and screwdriver",
+    "gas_station": "fuel pump",
+    "highway_route": "H-series, H1 to H4",
+    "boundaries": "dotted line"
+  },
+
+  "relations": [
+    ["river_serpentine", "separates", "west_side(university, financial_quarter, harbor)", "east_side(downtown_grid_northeast, southeast_complex)"],
+    ["central_suspension_bridge", "links", "financial_quarter", "downtown_grid_northeast"],
+    ["southeast_industrial_logistics_complex", "contains", "large_chemical_plant", "automotive_factory", "heavy_manufacturing_units_a_d", "regional_warehouse_distribution_hub", "rail_logistics_terminal"],
+    ["central_transit_hub", "is_north_of", "southeast_industrial_logistics_complex"],
+    ["northwest_suburban_enclaves", "connected_to_city_by", "H1", "remote_suburban_subway_station"]
+  ]
+}
