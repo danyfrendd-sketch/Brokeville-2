@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - "map/tools/download_pietarsaari_osm.py"
+      - "map/tools/render_pietarsaari_map.py"
       - ".github/workflows/build-pietarsaari-map.yml"
 
 permissions:
@@ -23,7 +24,7 @@ jobs:
           python-version: "3.12"
       - name: Download OSM geometry
         run: python map/tools/download_pietarsaari_osm.py
-      - name: Check generated GeoJSON
+      - name: Validate downloaded GeoJSON
         run: |
           python - <<'PY'
           import json
@@ -34,16 +35,19 @@ jobs:
           print(f"GeoJSON: {p}; features: {len(features)}; bytes: {p.stat().st_size}")
           if not features:
               raise SystemExit("No features were downloaded")
-          kinds = {}
-          for feature in features:
-              kind = feature.get("properties", {}).get("kind", "unknown")
-              kinds[kind] = kinds.get(kind, 0) + 1
-          print("Feature counts by kind:", json.dumps(kinds, ensure_ascii=False, sort_keys=True))
+          from collections import Counter
+          print("Top tags:", Counter(
+              k for f in features for k in (f.get("properties") or {}).keys()
+          ).most_common(20))
           PY
-      - name: Upload GeoJSON artifact
+      - name: Render styled vector map
+        run: python map/tools/render_pietarsaari_map.py
+      - name: Upload map outputs
         uses: actions/upload-artifact@v4
         with:
-          name: pietarsaari-osm-geojson
-          path: map/data/pietarsaari_osm.geojson
+          name: pietarsaari-map-build
+          path: |
+            map/data/pietarsaari_osm.geojson
+            map/data/pietarsaari_map.svg
           if-no-files-found: error
           retention-days: 30
