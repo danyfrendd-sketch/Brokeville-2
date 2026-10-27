@@ -1,0 +1,101 @@
+{
+  "project": "Brokeville 2",
+  "source": {
+    "url": "https://files.catbox.moe/7pq1fv.jpeg",
+    "type": "schematic city map",
+    "canvas_px": {
+      "width": 1000,
+      "height": 536
+    },
+    "coordinate_origin": "top-left",
+    "x_direction": "right",
+    "y_direction": "down"
+  },
+  "calibration": {
+    "scale_bar_label_km": 10,
+    "scale_bar_pixel_length": null,
+    "meters_per_pixel": null,
+    "status": "not calibrated",
+    "note": "Measure the exact endpoints of the 0–10 km scale bar from the original-resolution image before converting pixel geometry to world coordinates. Do not guess a final world scale."
+  },
+  "layers": [
+    {
+      "id": "bounds",
+      "status": "pending_trace",
+      "description": "Outer frame and out-of-bounds note"
+    },
+    {
+      "id": "water",
+      "status": "pending_trace",
+      "description": "River Serpentine, harbor, marina, coastline, piers"
+    },
+    {
+      "id": "highways",
+      "status": "pending_trace",
+      "description": "H1–H4, ramps, interchanges, bridges"
+    },
+    {
+      "id": "streets",
+      "status": "pending_trace",
+      "description": "Street centerlines and blocks"
+    },
+    {
+      "id": "rail",
+      "status": "pending_trace",
+      "description": "Rail corridors and rail logistics terminal"
+    },
+    {
+      "id": "districts",
+      "status": "pending_trace",
+      "description": "District boundaries"
+    },
+    {
+      "id": "buildings",
+      "status": "pending_trace",
+      "description": "Individual building footprints; trace only from source"
+    },
+    {
+      "id": "labels",
+      "status": "pending_trace",
+      "description": "Labels, compass, scale bar, legend"
+    }
+  ],
+  "districts": [
+    "Northwest Region — Remote Suburban Enclaves",
+    "Suburban Retail Plaza",
+    "School",
+    "Residential Parks — west",
+    "University Campus",
+    "Financial Quarter",
+    "Bottom-left District — Harbor & Marina",
+    "Central District",
+    "Central Transit Hub",
+    "Industrial Sector",
+    "Heavy Manufacturing — Units A–D",
+    "Automotive Factory",
+    "Large Chemical Plant (Hazmat)",
+    "Regional Warehouse & Distribution Hub",
+    "Rail Logistics Terminal",
+    "Southeast Region — Expanded Industrial & Logistics Complex"
+  ],
+  "named_features": [
+    "River Serpentine",
+    "Central Suspension Bridge",
+    "Grand Ferris Wheel",
+    "Pier A — west",
+    "Pier A — east",
+    "Pier B",
+    "Pier C — west",
+    "Pier C — east",
+    "Regional Retail Store Complexes",
+    "Remote Suburban Subway Station",
+    "Gas stations / service nodes"
+  ],
+  "highway_routes": [
+    "H1",
+    "H2",
+    "H3",
+    "H4"
+  ],
+  "accuracy_policy": "No invented building footprints. Image pixel tracing comes first; world scale is applied only after scale-bar calibration."
+}
