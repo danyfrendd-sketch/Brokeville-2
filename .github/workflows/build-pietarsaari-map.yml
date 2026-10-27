@@ -1,0 +1,49 @@
+name: Build Pietarsaari map data
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "map/tools/download_pietarsaari_osm.py"
+      - ".github/workflows/build-pietarsaari-map.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download OSM geometry
+        run: python map/tools/download_pietarsaari_osm.py
+      - name: Check generated GeoJSON
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("map/data/pietarsaari_osm.geojson")
+          data = json.loads(p.read_text(encoding="utf-8"))
+          features = data.get("features", [])
+          print(f"GeoJSON: {p}; features: {len(features)}; bytes: {p.stat().st_size}")
+          if not features:
+              raise SystemExit("No features were downloaded")
+          kinds = {}
+          for feature in features:
+              kind = feature.get("properties", {}).get("kind", "unknown")
+              kinds[kind] = kinds.get(kind, 0) + 1
+          print("Feature counts by kind:", json.dumps(kinds, ensure_ascii=False, sort_keys=True))
+          PY
+      - name: Upload GeoJSON artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pietarsaari-osm-geojson
+          path: map/data/pietarsaari_osm.geojson
+          if-no-files-found: error
+          retention-days: 30
