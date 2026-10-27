@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="536" viewBox="0 0 1000 536">
+  <title>Brokeville 2 — source tracing grid</title>
+  <desc>Original schematic reference with a 50-pixel coordinate grid. Coordinates use the top-left image corner as origin. Grid is a tracing aid, not a completed building-level trace.</desc>
+  <image href="https://files.catbox.moe/7pq1fv.jpeg" x="0" y="0" width="1000" height="536" preserveAspectRatio="none"/>
+  <g fill="none" stroke="#e11d48" stroke-width="0.65" opacity="0.72">
+    <line x1="50" y1="0" x2="50" y2="536"/>
+    <line x1="100" y1="0" x2="100" y2="536"/>
+    <line x1="150" y1="0" x2="150" y2="536"/>
+    <line x1="200" y1="0" x2="200" y2="536"/>
+    <line x1="250" y1="0" x2="250" y2="536"/>
+    <line x1="300" y1="0" x2="300" y2="536"/>
+    <line x1="350" y1="0" x2="350" y2="536"/>
+    <line x1="400" y1="0" x2="400" y2="536"/>
+    <line x1="450" y1="0" x2="450" y2="536"/>
+    <line x1="500" y1="0" x2="500" y2="536"/>
+    <line x1="550" y1="0" x2="550" y2="536"/>
+    <line x1="600" y1="0" x2="600" y2="536"/>
+    <line x1="650" y1="0" x2="650" y2="536"/>
+    <line x1="700" y1="0" x2="700" y2="536"/>
+    <line x1="750" y1="0" x2="750" y2="536"/>
+    <line x1="800" y1="0" x2="800" y2="536"/>
+    <line x1="850" y1="0" x2="850" y2="536"/>
+    <line x1="900" y1="0" x2="900" y2="536"/>
+    <line x1="950" y1="0" x2="950" y2="536"/>
+    <line x1="0" y1="50" x2="1000" y2="50"/>
+    <line x1="0" y1="100" x2="1000" y2="100"/>
+    <line x1="0" y1="150" x2="1000" y2="150"/>
+    <line x1="0" y1="200" x2="1000" y2="200"/>
+    <line x1="0" y1="250" x2="1000" y2="250"/>
+    <line x1="0" y1="300" x2="1000" y2="300"/>
+    <line x1="0" y1="350" x2="1000" y2="350"/>
+    <line x1="0" y1="400" x2="1000" y2="400"/>
+    <line x1="0" y1="450" x2="1000" y2="450"/>
+    <line x1="0" y1="500" x2="1000" y2="500"/>
+  </g>
+  <g fill="#b91c1c" stroke="#fff" stroke-width="2" paint-order="stroke" font-family="monospace" font-size="10" font-weight="bold">
+    <text x="3" y="12">0</text>
+    <text x="53" y="12">50</text>
+    <text x="103" y="12">100</text>
+    <text x="153" y="12">150</text>
+    <text x="203" y="12">200</text>
+    <text x="253" y="12">250</text>
+    <text x="303" y="12">300</text>
+    <text x="353" y="12">350</text>
+    <text x="403" y="12">400</text>
+    <text x="453" y="12">450</text>
+    <text x="503" y="12">500</text>
+    <text x="553" y="12">550</text>
+    <text x="603" y="12">600</text>
+    <text x="653" y="12">650</text>
+    <text x="703" y="12">700</text>
+    <text x="753" y="12">750</text>
+    <text x="803" y="12">800</text>
+    <text x="853" y="12">850</text>
+    <text x="903" y="12">900</text>
+    <text x="953" y="12">950</text>
+    <text x="3" y="24">0</text>
+    <text x="3" y="74">50</text>
+    <text x="3" y="124">100</text>
+    <text x="3" y="174">150</text>
+    <text x="3" y="224">200</text>
+    <text x="3" y="274">250</text>
+    <text x="3" y="324">300</text>
+    <text x="3" y="374">350</text>
+    <text x="3" y="424">400</text>
+    <text x="3" y="474">450</text>
+    <text x="3" y="524">500</text>
+  </g>
+  <rect x="0.5" y="0.5" width="999" height="535" fill="none" stroke="#b91c1c" stroke-width="1"/>
+</svg>
