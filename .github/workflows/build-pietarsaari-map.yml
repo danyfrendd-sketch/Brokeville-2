@@ -27,7 +27,16 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Download OSM geometry
+      - name: Restore cached map geometry
+        id: map-cache
+        uses: actions/cache@v4
+        with:
+          path: map/data/pietarsaari_osm.geojson
+          key: pietarsaari-osm-source-v1
+          restore-keys: |
+            pietarsaari-osm-source-
+      - name: Download OSM geometry only when no saved source exists
+        if: steps.map-cache.outputs.cache-hit != 'true'
         run: python -u map/tools/download_pietarsaari_osm.py
       - name: Validate downloaded GeoJSON
         run: |
