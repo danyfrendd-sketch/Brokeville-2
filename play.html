@@ -67,9 +67,18 @@ loader.load('./map/preview/pietarsaari_3d.glb',g=>{
  mapRoot.traverse(o=>{
   if(o.isMesh && /road_/i.test(o.name) && o.geometry && o.geometry.attributes.position){
    const p=o.geometry.attributes.position;
-   for(let i=0;i<p.count;i++) p.setZ(i,p.getZ(i)+0.18);
+   // Raise road surfaces clearly above the terrain to prevent them disappearing into it.
+   for(let i=0;i<p.count;i++) p.setZ(i,p.getZ(i)+0.42);
    p.needsUpdate=true;
    o.geometry.computeVertexNormals();
+   // Give road decks a consistent asphalt appearance while retaining any existing texture.
+   const mats=Array.isArray(o.material)?o.material:[o.material];
+   for(const m of mats){if(m && m.color){m.color.set(0x777b7d);m.roughness=0.96;m.metalness=0; m.needsUpdate=true;}}
+  }
+  // Improve the existing terrain's natural ground tone without changing its geometry.
+  if(o.isMesh && /terrain/i.test(o.name)){
+   const mats=Array.isArray(o.material)?o.material:[o.material];
+   for(const m of mats){if(m && m.color){m.color.set(0xb4bd91);m.roughness=1;m.metalness=0;m.needsUpdate=true;}}
   }
  });
  // Source GLB is Z-up; rotate into Three.js Y-up world.
