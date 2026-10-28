@@ -73,15 +73,23 @@ loader.load('./map/preview/pietarsaari_3d.glb',g=>{
  mapRoot.position.y=-bounds.min.y;
  scene.add(mapRoot);
  mapRoot.updateMatrixWorld(true);
- // Find the actual terrain surface under the map center and spawn just above it.
+ // Find the terrain and derive spawn height from its actual vertices.
+ // Raycasting can miss a terrain mesh if its triangle winding faces downward,
+ // so use the nearest transformed terrain vertex as a reliable fallback.
  let terrainMesh=null;
  mapRoot.traverse(o=>{if(!terrainMesh && o.isMesh && /terrain/i.test(o.name)) terrainMesh=o;});
- const raycaster=new THREE.Raycaster();
  spawnY=camY;
- if(terrainMesh){
-   raycaster.set(new THREE.Vector3(0,10000,0),new THREE.Vector3(0,-1,0));
-   const hit=raycaster.intersectObject(terrainMesh,true)[0];
-   if(hit) spawnY=hit.point.y+camY;
+ if(terrainMesh && terrainMesh.geometry && terrainMesh.geometry.attributes.position){
+   mapRoot.updateMatrixWorld(true);
+   const pos=terrainMesh.geometry.attributes.position;
+   const v=new THREE.Vector3();
+   let best=Infinity, groundY=0;
+   for(let i=0;i<pos.count;i++){
+     v.fromBufferAttribute(pos,i).applyMatrix4(terrainMesh.matrixWorld);
+     const d=v.x*v.x+v.z*v.z;
+     if(d<best){best=d;groundY=v.y;}
+   }
+   spawnY=groundY+camY;
  }
  camera.position.set(0,spawnY,0);
  loaded=true;go.disabled=false;go.textContent='ВОЙТИ НА КАРТУ';loadMsg.textContent='Карта загружена. Размер примерно '+(size.x/1000).toFixed(1)+' × '+(size.z/1000).toFixed(1)+' км. Можно ходить от первого лица.';
