@@ -62,6 +62,16 @@ const loadTimer=setTimeout(()=>{if(!loaded){status.textContent='Загрузка
 loader.load('./map/preview/pietarsaari_3d.glb',g=>{
  clearTimeout(loadTimer);
  mapRoot=g.scene;
+ // Display-only correction for road decks in the EXISTING GLB. This does not
+ // download, regenerate, or replace the map source.
+ mapRoot.traverse(o=>{
+  if(o.isMesh && /road_/i.test(o.name) && o.geometry && o.geometry.attributes.position){
+   const p=o.geometry.attributes.position;
+   for(let i=0;i<p.count;i++) p.setZ(i,p.getZ(i)+0.18);
+   p.needsUpdate=true;
+   o.geometry.computeVertexNormals();
+  }
+ });
  // Source GLB is Z-up; rotate into Three.js Y-up world.
  mapRoot.rotation.x=-Math.PI/2;
  mapRoot.updateMatrixWorld(true);
