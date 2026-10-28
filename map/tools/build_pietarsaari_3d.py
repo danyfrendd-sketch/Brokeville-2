@@ -6,12 +6,12 @@ from pathlib import Path
 import numpy as np
 import trimesh
 from shapely.geometry import Polygon, LineString, MultiPolygon
-from shapely.ops import unary_union
+from shapely.ops import unary_union, triangulate
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "data" / "pietarsaari_osm.geojson"
 OUTPUT = ROOT / "data" / "pietarsaari_3d.glb"
-GRID = 41  # elevation sample grid: 40 x 40 terrain cells
+GRID = 61  # finer elevation grid: 60 x 60 terrain cells
 LAT0, LON0 = 63.674, 22.704
 METERS_PER_DEG_LAT = 111320.0
 METERS_PER_DEG_LON = 111320.0 * math.cos(math.radians(LAT0))
@@ -102,9 +102,35 @@ def osm_colour(value, fallback):
 
 
 def ground_z(x, y, elevations, zbase):
-    ix = int(np.clip(round((x+EXTENT)/(2*EXTENT)*(GRID-1)), 0, GRID-1))
-    iy = int(np.clip(round((y+EXTENT)/(2*EXTENT)*(GRID-1)), 0, GRID-1))
-    return float(elevations[iy, ix] - zbase)
+    # Bilinear interpolation avoids stair-step heights on roads and landcover.
+    gx = float(np.clip((x + EXTENT) / (2 * EXTENT) * (GRID - 1), 0, GRID - 1))
+    gy = float(np.clip((y + EXTENT) / (2 * EXTENT) * (GRID - 1), 0, GRID - 1))
+    x0, y0 = int(math.floor(gx)), int(math.floor(gy))
+    x1, y1 = min(x0 + 1, GRID - 1), min(y0 + 1, GRID - 1)
+    tx, ty = gx - x0, gy - y0
+    a = elevations[y0, x0] * (1 - tx) + elevations[y0, x1] * tx
+    b = elevations[y1, x0] * (1 - tx) + elevations[y1, x1] * tx
+    return float(a * (1 - ty) + b * ty - zbase)
+
+
+def draped_polygon_mesh(poly, elevations, zbase, lift=0.03):
+    # Triangulate each road/land polygon and put every vertex on the terrain.
+    vertices, faces, index = [], [], {}
+    for tri in triangulate(poly):
+        if not poly.covers(tri.representative_point()):
+            continue
+        face = []
+        for x, y in list(tri.exterior.coords)[:3]:
+            key = (round(x, 4), round(y, 4))
+            if key not in index:
+                index[key] = len(vertices)
+                vertices.append([x, y, ground_z(x, y, elevations, zbase) + lift])
+            face.append(index[key])
+        if len(face) == 3:
+            faces.append(face)
+    if not faces:
+        return None
+    return trimesh.Trimesh(vertices=np.asarray(vertices), faces=np.asarray(faces), process=False)
 
 
 def main():
@@ -195,8 +221,8 @@ def main():
                 for part in polygon_parts(poly):
                     if part.area < 12 or not part.is_valid: continue
                     try:
-                        mesh = trimesh.creation.extrude_polygon(part, 0.035, engine="earcut")
-                        mesh.apply_translation([0, 0, ground_z(part.centroid.x, part.centroid.y, elevations, zbase) + 0.035])
+                        mesh = draped_polygon_mesh(part, elevations, zbase, lift=0.045)
+                        if mesh is None: continue
                         mesh.visual.face_colors = fill
                         scene.add_geometry(mesh, node_name=f"landcover_{land_meshes}")
                         land_meshes += 1
@@ -215,11 +241,8 @@ def main():
         for part in polygon_parts(road_poly):
             if part.area < 2: continue
             try:
-                mesh = trimesh.creation.extrude_polygon(part, 0.08, engine="earcut")
-                cx, cy = part.centroid.x, part.centroid.y
-                ix = int(np.clip(round((cx+EXTENT)/(2*EXTENT)*(GRID-1)),0,GRID-1))
-                iy = int(np.clip(round((cy+EXTENT)/(2*EXTENT)*(GRID-1)),0,GRID-1))
-                mesh.apply_translation([0,0,float(elevations[iy,ix]-zbase)+0.25])
+                mesh = draped_polygon_mesh(part, elevations, zbase, lift=0.12)
+                if mesh is None: continue
                 mesh.visual.face_colors = [75, 75, 72, 255]
                 scene.add_geometry(mesh, node_name=f"road_{road_meshes}")
                 road_meshes += 1
@@ -229,7 +252,7 @@ def main():
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     scene.export(OUTPUT)
     print(f"3D GLB: {OUTPUT} ({OUTPUT.stat().st_size} bytes)")
-    print(f"Terrain grid: {GRID}x{GRID}; elevation range: {elevations.min():.1f}–{elevations.max():.1f} m")
+    print(f"Terrain grid: {GRID}x{GRID}; road and land surfaces draped over terrain; elevation range: {elevations.min():.1f}–{elevations.max():.1f} m")
     print(f"Buildings extruded: {buildings}; land/water polygons: {land_meshes}; road segments meshed: {road_meshes}")
     print("Building footprints and available height/colour tags use OSM data; missing heights are estimated from floor count or building type.")
     print("Data attribution: © OpenStreetMap contributors, ODbL 1.0.")
