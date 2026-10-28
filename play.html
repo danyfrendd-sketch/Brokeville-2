@@ -25,26 +25,46 @@ button{border:0;border-radius:12px;padding:14px 19px;background:#8be09b;color:#1
 <body>
 <div id="hud"><strong>BROKEVILLE 2 · PIETARSAARI 3D</strong><small>Телефон: левый круг — ходьба, справа веди пальцем — осмотр. Нажми «ПОЛЁТ», затем ВВЕРХ/ВНИЗ.</small></div>
 <div id="status">Загрузка 3D-карты…</div>
-<button id="home" hidden>К старту</button><button id="fly" hidden>✈ ПОЛЁТ: ВЫКЛ</button>
+<button id="home" hidden>К старту</button><button id="fly" hidden>✈ ПОЛЁТ: ВЫКЛ</button><button id="downloadLogs" hidden style="position:fixed;z-index:20;right:10px;bottom:12px;background:#ffd36a;color:#241800;font-size:13px">СКАЧАТЬ ЛОГИ</button>
 <div id="start"><div id="panel"><h1>Brokeville 2</h1><p>Загружаю реальную геометрию улиц, дорог, зданий и рельефа Пиетарсаари. Модель может загружаться некоторое время.</p><p id="loadMsg">Подключение к 3D-карте…</p><button id="go" disabled>ЗАГРУЗКА…</button></div></div>
 <div id="controls"><div id="stickBase"><div id="stick"></div></div><button id="up">⚡ БЕГ</button><button id="rise">ВВЕРХ</button><button id="lower">ВНИЗ</button><div id="lookHint">Справа — обзор. Кнопка «Полёт» — свободный полёт</div></div>
 <script>
-/* Keep a visible diagnostic even if a browser blocks the 3D JavaScript modules. */
-window.__brokevilleLoadWatch = setTimeout(() => {
- const s=document.querySelector('#status'), m=document.querySelector('#loadMsg'), b=document.querySelector('#go');
- if(s && s.textContent.includes('Загрузка')) s.textContent='Ошибка запуска 3D';
- if(m && m.textContent.includes('Подключение')) m.textContent='Скрипт 3D не запустился. Обнови страницу; если ошибка повторится, сообщи мне.';
- if(b && b.disabled){b.disabled=false;b.textContent='ОБНОВИТЬ';b.onclick=()=>location.reload();}
-}, 20000);
-window.addEventListener('error', e => {
- const s=document.querySelector('#status'), m=document.querySelector('#loadMsg');
- if(s) s.textContent='Ошибка JavaScript';
- if(m) m.textContent='Не удалось запустить 3D-модуль: '+(e.message||'ошибка загрузки').slice(0,120);
+/* Client-side diagnostics. Static GitHub Pages cannot write files into /logs,
+   so errors are saved in this browser and can be downloaded as a report. */
+window.__brokevilleLogs=[];
+window.__brokevilleLog=(kind,details={})=>{
+ const entry={time:new Date().toISOString(),kind,details,url:location.href,userAgent:navigator.userAgent,readyState:document.readyState};
+ window.__brokevilleLogs.push(entry);
+ try{localStorage.setItem('brokeville2-last-logs',JSON.stringify(window.__brokevilleLogs.slice(-100)));}catch(_){}
+ console.error('[Brokeville2]',entry);
+ const s=document.querySelector('#status'),m=document.querySelector('#loadMsg'),b=document.querySelector('#go'),dl=document.querySelector('#downloadLogs');
+ if(kind==='error'||kind==='unhandledrejection'||kind==='load-timeout'||kind==='module-error'){
+  if(s)s.textContent='Ошибка — логи сохранены';
+  if(m)m.textContent=String(details.message||details.reason||kind).slice(0,180)+' · Нажми «СКАЧАТЬ ЛОГИ».';
+  if(dl)dl.hidden=false;
+  if(b&&b.disabled){b.disabled=false;b.textContent='ПОПРОБОВАТЬ СНОВА';b.onclick=()=>location.reload();}
+ }
+};
+window.addEventListener('error',e=>{
+ window.__brokevilleLog('error',{message:e.message||'Resource/script error',source:e.filename||'',line:e.lineno||0,column:e.colno||0,stack:e.error&&e.error.stack||''});
 });
-window.addEventListener('unhandledrejection', e => {
- const s=document.querySelector('#status'), m=document.querySelector('#loadMsg');
- if(s) s.textContent='Ошибка загрузки 3D';
- if(m) m.textContent='Ошибка подключения: '+String(e.reason||'неизвестная ошибка').slice(0,120);
+window.addEventListener('unhandledrejection',e=>{
+ const reason=e.reason;
+ window.__brokevilleLog('unhandledrejection',{message:String(reason&&reason.message||reason||'unknown'),stack:reason&&reason.stack||''});
+});
+window.__brokevilleLoadWatch=setTimeout(()=>{
+ const s=document.querySelector('#status');
+ if(s&&!s.textContent.includes('загружена'))window.__brokevilleLog('module-error',{message:'3D module did not finish startup within 20 seconds'});
+},20000);
+window.addEventListener('DOMContentLoaded',()=>{
+ const dl=document.querySelector('#downloadLogs');
+ if(dl)dl.addEventListener('click',()=>{
+  const report={app:'Brokeville 2',createdAt:new Date().toISOString(),logs:window.__brokevilleLogs};
+  const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='brokeville2-error-log-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+ });
 });
 </script>
 <script type="module">
@@ -61,7 +81,7 @@ const groundRaycaster=new THREE.Raycaster();
 const groundHeightAt=(x,z)=>{if(!terrainMesh)return null;groundRaycaster.set(new THREE.Vector3(x,10000,z),new THREE.Vector3(0,-1,0));const hit=groundRaycaster.intersectObject(terrainMesh,true)[0];return hit?hit.point.y:null;};
 const keys={};
 const loader=new GLTFLoader();
-const loadTimer=setTimeout(()=>{if(!loaded){status.textContent='Загрузка зависла';loadMsg.textContent='3D-файл не ответил за 45 секунд. Проверь интернет и нажми кнопку, чтобы попробовать снова.';go.disabled=false;go.textContent='ПОПРОБОВАТЬ СНОВА';go.onclick=()=>location.reload();}},45000);
+const loadTimer=setTimeout(()=>{if(!loaded){window.__brokevilleLog('load-timeout',{message:'GLB load/scene setup exceeded 45 seconds'});status.textContent='Загрузка зависла';loadMsg.textContent='Карта не загрузилась за 45 секунд. Скачай логи и отправь их.';go.disabled=false;go.textContent='ПОПРОБОВАТЬ СНОВА';go.onclick=()=>location.reload();}},45000);
 loader.load('./map/preview/pietarsaari_3d.glb',g=>{
  clearTimeout(loadTimer);
  mapRoot=g.scene;
@@ -116,7 +136,7 @@ loader.load('./map/preview/pietarsaari_3d.glb',g=>{
  camera.position.set(0,spawnY,0);
  loaded=true;go.disabled=false;go.textContent='ВОЙТИ НА КАРТУ';loadMsg.textContent='Карта загружена. Размер примерно '+(size.x/1000).toFixed(1)+' × '+(size.z/1000).toFixed(1)+' км. Можно ходить от первого лица.';
  status.textContent='3D-карта загружена';document.querySelector('#home').hidden=false;document.querySelector('#fly').hidden=false;
-},xhr=>{if(xhr.total){const p=Math.round(xhr.loaded/xhr.total*100);status.textContent='Загрузка 3D-карты '+p+'%';loadMsg.textContent='Загружено '+p+'%';}},err=>{clearTimeout(loadTimer);console.error(err);status.textContent='Не удалось загрузить модель';loadMsg.textContent='3D-файл не найден или сеть не ответила. Попробуй обновить страницу.';go.disabled=false;go.textContent='ПОПРОБОВАТЬ СНОВА';go.onclick=()=>location.reload();});
+},xhr=>{const total=Number(xhr.total)||0,loadedBytes=Number(xhr.loaded)||0;const p=total>0?Math.max(0,Math.min(100,Math.round(loadedBytes/total*100))):null;status.textContent=p===null?'Загрузка 3D-карты…':'Загрузка 3D-карты '+p+'%';loadMsg.textContent=p===null?'Получено '+Math.round(loadedBytes/1048576)+' МБ':'Загружено '+p+'% ('+Math.round(loadedBytes/1048576)+' МБ)';if(loadedBytes>total&&total>0)window.__brokevilleLog('progress-anomaly',{loadedBytes,total,rawPercent:loadedBytes/total*100,message:'Progress bytes exceed reported total; display is clamped to 100%'});},err=>{clearTimeout(loadTimer);window.__brokevilleLog('load-error',{message:err&&err.message||'GLB load failed',type:err&&err.type||'',status:err&&err.target&&err.target.status||0});status.textContent='Не удалось загрузить модель';loadMsg.textContent='Ошибка загрузки. Скачай логи и отправь их.';go.disabled=false;go.textContent='ПОПРОБОВАТЬ СНОВА';go.onclick=()=>location.reload();});
 function enter(){if(!loaded)return;playing=true;start.style.display='none';if(innerWidth<800)controls.style.display='block';}
 go.addEventListener('click',()=>{enter();if(innerWidth>=800)renderer.domElement.requestPointerLock?.();});
 document.querySelector('#fly').addEventListener('click',()=>setFlying(!flying));
