@@ -6,6 +6,7 @@ on:
     paths:
       - "map/tools/download_pietarsaari_osm.py"
       - "map/tools/render_pietarsaari_map.py"
+      - "map/tools/build_pietarsaari_3d.py"
       - ".github/workflows/build-pietarsaari-map.yml"
 
 permissions:
