@@ -64,6 +64,49 @@ def polygon_parts(geom):
     return []
 
 
+def numeric_tag(value):
+    if value is None:
+        return None
+    try:
+        return float(str(value).lower().replace("meters", "").replace("meter", "").replace("metres", "").replace("metre", "").replace("m", "").strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def osm_colour(value, fallback):
+    if not value:
+        return fallback
+    name = str(value).strip().lower().replace(" ", "")
+    palette = {
+        "white": (226, 222, 210, 255), "ivory": (220, 213, 190, 255),
+        "cream": (218, 204, 170, 255), "beige": (190, 166, 140, 255),
+        "yellow": (205, 181, 103, 255), "orange": (190, 120, 70, 255),
+        "red": (151, 75, 63, 255), "brown": (112, 78, 59, 255),
+        "grey": (139, 139, 132, 255), "gray": (139, 139, 132, 255),
+        "lightgrey": (180, 178, 169, 255), "darkgrey": (90, 90, 86, 255),
+        "black": (55, 54, 52, 255), "green": (105, 126, 87, 255),
+        "blue": (93, 127, 151, 255),
+    }
+    if name in palette:
+        return palette[name]
+    if name.startswith("#"):
+        h = name[1:]
+        try:
+            if len(h) == 3:
+                h = "".join(c * 2 for c in h)
+            if len(h) == 6:
+                return tuple(int(h[i:i+2], 16) for i in (0, 2, 4)) + (255,)
+        except ValueError:
+            pass
+    return fallback
+
+
+def ground_z(x, y, elevations, zbase):
+    ix = int(np.clip(round((x+EXTENT)/(2*EXTENT)*(GRID-1)), 0, GRID-1))
+    iy = int(np.clip(round((y+EXTENT)/(2*EXTENT)*(GRID-1)), 0, GRID-1))
+    return float(elevations[iy, ix] - zbase)
+
+
 def main():
     data = json.loads(SOURCE.read_text(encoding="utf-8"))
     features = data.get("features", [])
@@ -96,6 +139,7 @@ def main():
     # Buildings use OSM footprints and tagged heights where available; otherwise conservative defaults.
     buildings = 0
     roads = []
+    land_meshes = 0
     for feat in features:
         props = feat.get("properties") or {}
         geom = feat.get("geometry") or {}
@@ -106,12 +150,24 @@ def main():
             raw_polys = [p[0] for p in coords if p]
         else:
             raw_polys = []
+        landuse = str(props.get("landuse", "")).lower()
+        leisure = str(props.get("leisure", "")).lower()
+        natural = str(props.get("natural", "")).lower()
+        water_tag = str(props.get("water", "")).lower()
+        is_water = natural in ("water", "wetland") or bool(water_tag) or landuse in ("reservoir", "basin") or leisure == "water_park"
+        is_green = landuse in ("grass", "meadow", "forest", "village_green", "recreation_ground", "orchard", "allotments") or leisure in ("park", "garden", "golf_course", "nature_reserve", "pitch") or natural in ("wood", "scrub", "heath")
         if "building" in props:
-            try:
-                height = float(str(props.get("height", "")).replace("m", "").strip())
-            except (ValueError, TypeError):
-                height = 8.0 if props.get("building") in ("house", "detached", "residential") else 10.0
+            height = numeric_tag(props.get("height")) or numeric_tag(props.get("building:height"))
+            if height is None:
+                levels = numeric_tag(props.get("building:levels"))
+                if levels is not None:
+                    height = max(1, levels) * 3.0 + (numeric_tag(props.get("roof:height")) or 0.0)
+                else:
+                    kind = str(props.get("building", "")).lower()
+                    height = 5.5 if kind in ("house", "detached", "bungalow", "cabin", "shed", "garage") else 9.0
             height = min(max(height, 3.0), 80.0)
+            facade = osm_colour(props.get("building:colour") or props.get("building:color"), [190, 166, 140, 255])
+            roof_colour = osm_colour(props.get("roof:colour") or props.get("roof:color"), [105, 83, 70, 255])
             for ring in raw_polys:
                 if len(ring) < 4: continue
                 poly = Polygon([xy(p[0], p[1]) for p in ring])
@@ -120,13 +176,30 @@ def main():
                     if part.area < 8 or not part.is_valid: continue
                     try:
                         mesh = trimesh.creation.extrude_polygon(part, height, engine="earcut")
-                        cx, cy = part.centroid.x, part.centroid.y
-                        ix = int(np.clip(round((cx+EXTENT)/(2*EXTENT)*(GRID-1)),0,GRID-1))
-                        iy = int(np.clip(round((cy+EXTENT)/(2*EXTENT)*(GRID-1)),0,GRID-1))
-                        mesh.apply_translation([0, 0, float(elevations[iy,ix]-zbase)+0.15])
-                        mesh.visual.face_colors = [190, 166, 140, 255]
+                        base_z = ground_z(part.centroid.x, part.centroid.y, elevations, zbase) + 0.10
+                        mesh.apply_translation([0, 0, base_z])
+                        face_colours = np.tile(np.asarray(facade, dtype=np.uint8), (len(mesh.faces), 1))
+                        top_faces = mesh.face_normals[:, 2] > 0.75
+                        face_colours[top_faces] = np.asarray(roof_colour, dtype=np.uint8)
+                        mesh.visual.face_colors = face_colours
                         scene.add_geometry(mesh, node_name=f"building_{buildings}")
                         buildings += 1
+                    except Exception:
+                        continue
+        elif (is_water or is_green) and raw_polys:
+            fill = [77, 139, 166, 255] if is_water else ([75, 112, 67, 255] if landuse == "forest" or natural == "wood" else [108, 143, 83, 255])
+            for ring in raw_polys:
+                if len(ring) < 4: continue
+                poly = Polygon([xy(p[0], p[1]) for p in ring])
+                if not poly.is_valid: poly = poly.buffer(0)
+                for part in polygon_parts(poly):
+                    if part.area < 12 or not part.is_valid: continue
+                    try:
+                        mesh = trimesh.creation.extrude_polygon(part, 0.035, engine="earcut")
+                        mesh.apply_translation([0, 0, ground_z(part.centroid.x, part.centroid.y, elevations, zbase) + 0.035])
+                        mesh.visual.face_colors = fill
+                        scene.add_geometry(mesh, node_name=f"landcover_{land_meshes}")
+                        land_meshes += 1
                     except Exception:
                         continue
         elif props.get("highway"):
@@ -157,7 +230,8 @@ def main():
     scene.export(OUTPUT)
     print(f"3D GLB: {OUTPUT} ({OUTPUT.stat().st_size} bytes)")
     print(f"Terrain grid: {GRID}x{GRID}; elevation range: {elevations.min():.1f}–{elevations.max():.1f} m")
-    print(f"Buildings extruded: {buildings}; road segments meshed: {road_meshes}")
-    print("Building and road positions are based on OSM coordinates; untagged building heights use defaults.")
+    print(f"Buildings extruded: {buildings}; land/water polygons: {land_meshes}; road segments meshed: {road_meshes}")
+    print("Building footprints and available height/colour tags use OSM data; missing heights are estimated from floor count or building type.")
+    print("Data attribution: © OpenStreetMap contributors, ODbL 1.0.")
 if __name__ == "__main__":
     main()
