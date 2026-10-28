@@ -81,8 +81,15 @@ const groundRaycaster=new THREE.Raycaster();
 const groundHeightAt=(x,z)=>{if(!terrainMesh)return null;groundRaycaster.set(new THREE.Vector3(x,10000,z),new THREE.Vector3(0,-1,0));const hit=groundRaycaster.intersectObject(terrainMesh,true)[0];return hit?hit.point.y:null;};
 const keys={};
 const loader=new GLTFLoader();
-const loadTimer=setTimeout(()=>{if(!loaded){window.__brokevilleLog('load-timeout',{message:'GLB load/scene setup exceeded 45 seconds'});status.textContent='Загрузка зависла';loadMsg.textContent='Карта не загрузилась за 45 секунд. Скачай логи и отправь их.';go.disabled=false;go.textContent='ПОПРОБОВАТЬ СНОВА';go.onclick=()=>location.reload();}},45000);
-loader.load('./map/preview/pietarsaari_3d.glb',g=>{
+const GLB_MAP={v1:'./map/preview/pietarsaari_3d.glb',v2:'./map/preview/pietarsaari_3d_v2.glb'};
+const glbKey=(new URLSearchParams(location.search).get('glb')||'v1').toLowerCase();
+const glbUrl=GLB_MAP[glbKey]||GLB_MAP.v1;
+const glbLabel=GLB_MAP[glbKey]?glbKey:'v1(fallback)';
+status.textContent='Загрузка 3D-карты ('+glbLabel+')…';
+loadMsg.textContent='Модель: '+glbUrl;
+window.__brokevilleLog('glb-select',{key:glbLabel,url:glbUrl});
+const loadTimer=setTimeout(()=>{if(!loaded){window.__brokevilleLog('load-timeout',{message:'GLB load/scene setup exceeded 45 seconds',glb:glbUrl});status.textContent='Загрузка зависла';loadMsg.textContent='Карта не загрузилась за 45 секунд. Скачай логи и отправь их.';go.disabled=false;go.textContent='ПОПРОБОВАТЬ СНОВА';go.onclick=()=>location.reload();}},45000);
+loader.load(glbUrl,g=>{
  clearTimeout(loadTimer);
  mapRoot=g.scene;
  // Keep the existing GLB geometry intact during startup. The builder already
