@@ -1,0 +1,54 @@
+name: Validate project structure
+
+on:
+  push:
+    branches: [main, "audit/**", "fix/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check required runtime assets
+        run: |
+          test -s index.html
+          test -s play.html
+          test -s map/preview/pietarsaari_3d.glb
+          grep -Fq "./map/preview/pietarsaari_3d.glb" play.html
+
+      - name: Validate JSON files
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          files = sorted(Path(".").rglob("*.json"))
+          if not files:
+              raise SystemExit("No JSON files found")
+          for path in files:
+              with path.open(encoding="utf-8") as stream:
+                  json.load(stream)
+              print(f"OK JSON: {path}")
+          PY
+
+      - name: Compile Python scripts
+        run: python -m compileall -q map/tools
+
+      - name: Report optional v2 asset
+        run: |
+          if test -s map/preview/pietarsaari_3d_v2.glb; then
+            echo "Optional GLB v2 is present."
+          else
+            echo "::notice::GLB v2 is not present; ?glb=v2 is expected to fail until a reviewed v2 model is added."
+          fi

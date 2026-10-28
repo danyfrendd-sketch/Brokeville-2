@@ -1,0 +1,31 @@
+{
+  "dataset": "Pietarsaari/Jakobstad OSM geometry export",
+  "source": "Existing GitHub Actions artifact, run 40603748114",
+  "artifact_id": 12780610514,
+  "artifact_name": "pietarsaari-osm-geojson",
+  "artifact_url": "https://github.com/danyfrendd-sketch/Brokeville-2/actions/runs/40603748114",
+  "artifact_expires_on": "2026-11-26",
+  "archive": {
+    "file": "pietarsaari-osm-geojson.zip",
+    "bytes": 2594515,
+    "sha256": "96a640b49f27c8213d1cb0387ec6b1426ff5a50943b18f5ab8b9aeebc91a33e8"
+  },
+  "extracted": {
+    "file": "pietarsaari_osm.geojson",
+    "bytes": 14994747,
+    "sha256": "cb6511ce4c1da0a58394fcb3203765d6af55d2d7762d6d674d7f036fec110cd2",
+    "type": "FeatureCollection",
+    "features": 34934,
+    "geometry_types": {
+      "Polygon": 28882,
+      "LineString": 6052
+    },
+    "property_counts": {
+      "building": 27285,
+      "highway": 5725
+    }
+  },
+  "license": "OpenStreetMap contributors, ODbL 1.0; retain attribution and comply with ODbL obligations.",
+  "status": "Archive contents and GeoJSON structure/hash verified locally on 2026-10-28. The extracted source has not yet been committed into this repository.",
+  "safety_note": "Do not replace map/preview/pietarsaari_3d.glb. Do not re-download OSM unless this artifact is unavailable or corrupt."
+}
