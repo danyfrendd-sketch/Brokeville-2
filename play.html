@@ -67,18 +67,29 @@ loader.load('./map/preview/pietarsaari_3d.glb',g=>{
  mapRoot.updateMatrixWorld(true);
  const bounds=new THREE.Box3().setFromObject(mapRoot);
  const size=bounds.getSize(new THREE.Vector3());
- // Center the imported map and place its terrain at y=0.
+ // Center the imported map. Terrain elevation varies, so never spawn at a hard-coded y.
  mapRoot.position.x=-(bounds.min.x+bounds.max.x)/2;
  mapRoot.position.z=-(bounds.min.z+bounds.max.z)/2;
  mapRoot.position.y=-bounds.min.y;
  scene.add(mapRoot);
- camera.position.set(0,camY,0);
+ mapRoot.updateMatrixWorld(true);
+ // Find the actual terrain surface under the map center and spawn just above it.
+ let terrainMesh=null;
+ mapRoot.traverse(o=>{if(!terrainMesh && o.isMesh && /terrain/i.test(o.name)) terrainMesh=o;});
+ const raycaster=new THREE.Raycaster();
+ let spawnY=camY;
+ if(terrainMesh){
+   raycaster.set(new THREE.Vector3(0,10000,0),new THREE.Vector3(0,-1,0));
+   const hit=raycaster.intersectObject(terrainMesh,true)[0];
+   if(hit) spawnY=hit.point.y+camY;
+ }
+ camera.position.set(0,spawnY,0);
  loaded=true;go.disabled=false;go.textContent='ВОЙТИ НА КАРТУ';loadMsg.textContent='Карта загружена. Размер примерно '+(size.x/1000).toFixed(1)+' × '+(size.z/1000).toFixed(1)+' км. Можно ходить от первого лица.';
  status.textContent='3D-карта загружена';document.querySelector('#home').hidden=false;
 },xhr=>{if(xhr.total){const p=Math.round(xhr.loaded/xhr.total*100);status.textContent='Загрузка 3D-карты '+p+'%';loadMsg.textContent='Загружено '+p+'%';}},err=>{clearTimeout(loadTimer);console.error(err);status.textContent='Не удалось загрузить модель';loadMsg.textContent='3D-файл не найден или сеть не ответила. Попробуй обновить страницу.';go.disabled=false;go.textContent='ПОПРОБОВАТЬ СНОВА';go.onclick=()=>location.reload();});
 function enter(){if(!loaded)return;playing=true;start.style.display='none';if(innerWidth<800)controls.style.display='block';}
 go.addEventListener('click',()=>{enter();if(innerWidth>=800)renderer.domElement.requestPointerLock?.();});
-document.querySelector('#home').addEventListener('click',()=>{camera.position.set(0,camY,0);yaw=0;pitch=0;});
+document.querySelector('#home').addEventListener('click',()=>{let y=camY;if(mapRoot){let t=null;mapRoot.traverse(o=>{if(!t&&o.isMesh&&/terrain/i.test(o.name))t=o;});if(t){const r=new THREE.Raycaster();r.set(new THREE.Vector3(camera.position.x,10000,camera.position.z),new THREE.Vector3(0,-1,0));const h=r.intersectObject(t,true)[0];if(h)y=h.point.y+camY;}}camera.position.y=y;yaw=0;pitch=0;});
 document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement!==renderer.domElement&&innerWidth>=800&&playing){start.style.display='grid';playing=false;}});
 document.addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement){yaw-=e.movementX*.002;pitch-=e.movementY*.002;pitch=THREE.MathUtils.clamp(pitch,-1.35,1.35);}});
 addEventListener('keydown',e=>{keys[e.code]=true;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.code==='Escape'&&innerWidth<800){playing=false;start.style.display='grid';controls.style.display='none';}});
