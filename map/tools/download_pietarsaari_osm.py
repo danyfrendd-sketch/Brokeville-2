@@ -33,7 +33,6 @@ QUERY_TEMPLATE = """
 [out:json][timeout:90];
 (
   way["building"]({s},{w},{n},{e});
-  relation["building"]({s},{w},{n},{e});
   way["highway"]({s},{w},{n},{e});
   way["railway"]({s},{w},{n},{e});
   way["waterway"]({s},{w},{n},{e});
@@ -54,9 +53,9 @@ def fetch_tile(tile, tile_no):
         for endpoint in OVERPASS_ENDPOINTS:
             try:
                 req = urllib.request.Request(endpoint, data=body, headers={
-                    "User-Agent": "Brokeville2-map-builder/0.4 (OSM data downloader; bounded retries)"
+                    "User-Agent": "Brokeville2-map-builder/0.5 (single cached geometry source)"
                 }, method="POST")
-                with urllib.request.urlopen(req, timeout=20) as response:
+                with urllib.request.urlopen(req, timeout=75) as response:
                     result = json.load(response)
                 print(f"Tile {tile_no}/4: received {len(result.get('elements', []))} OSM elements")
                 return result.get("elements", [])
