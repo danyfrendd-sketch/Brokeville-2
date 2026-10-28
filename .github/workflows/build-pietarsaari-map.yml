@@ -51,11 +51,12 @@ jobs:
         run: |
           mkdir -p map/preview
           cp map/data/pietarsaari_map.svg map/preview/pietarsaari-map.svg
+          cp map/data/pietarsaari_3d.glb map/preview/pietarsaari_3d.glb
       - name: Commit updated SVG preview
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Build updated Pietarsaari map preview"
-          file_pattern: map/preview/pietarsaari-map.svg
+          file_pattern: map/preview/pietarsaari-map.svg map/preview/pietarsaari_3d.glb
       - name: Upload map outputs
         uses: actions/upload-artifact@v4
         with:
