@@ -23,14 +23,15 @@ OVERPASS_ENDPOINTS = [
     "https://overpass.private.coffee/api/interpreter",
 ]
 MID_LAT, MID_LON = (SOUTH + NORTH) / 2, (WEST + EAST) / 2
+# Smaller tiles keep Overpass responses fast and avoid one huge timeout.
+LAT_EDGES = [SOUTH + (NORTH - SOUTH) * i / 4 for i in range(5)]
+LON_EDGES = [WEST + (EAST - WEST) * i / 4 for i in range(5)]
 TILES = [
-    (SOUTH, WEST, MID_LAT, MID_LON),
-    (SOUTH, MID_LON, MID_LAT, EAST),
-    (MID_LAT, WEST, NORTH, MID_LON),
-    (MID_LAT, MID_LON, NORTH, EAST),
+    (LAT_EDGES[y], LON_EDGES[x], LAT_EDGES[y + 1], LON_EDGES[x + 1])
+    for y in range(4) for x in range(4)
 ]
 QUERY_TEMPLATE = """
-[out:json][timeout:90];
+[out:json][timeout:35];
 (
   way["building"]({s},{w},{n},{e});
   way["highway"]({s},{w},{n},{e});
@@ -49,20 +50,20 @@ def fetch_tile(tile, tile_no):
     query = QUERY_TEMPLATE.format(s=s, w=w, n=n, e=e)
     body = urllib.parse.urlencode({"data": query}).encode()
     errors = []
-    for attempt in range(2):
+    for attempt in range(3):
         for endpoint in OVERPASS_ENDPOINTS:
             try:
                 req = urllib.request.Request(endpoint, data=body, headers={
                     "User-Agent": "Brokeville2-map-builder/0.5 (single cached geometry source)"
                 }, method="POST")
-                with urllib.request.urlopen(req, timeout=75) as response:
+                with urllib.request.urlopen(req, timeout=45) as response:
                     result = json.load(response)
-                print(f"Tile {tile_no}/4: received {len(result.get('elements', []))} OSM elements")
+                print(f"Tile {tile_no}/{len(TILES)}: received {len(result.get('elements', []))} OSM elements")
                 return result.get("elements", [])
             except Exception as exc:
                 errors.append(f"{endpoint}: {exc}")
-                time.sleep(1 + attempt)
-    raise RuntimeError(f"Tile {tile_no}/4 failed after retries: " + " | ".join(errors[-3:]))
+                time.sleep(2 + attempt * 2)
+    raise RuntimeError(f"Tile {tile_no}/{len(TILES)} failed after retries: " + " | ".join(errors[-3:]))
 
 def way_feature(element):
     geom = element.get("geometry")
@@ -88,7 +89,7 @@ def main():
     for i, tile in enumerate(TILES, 1):
         for element in fetch_tile(tile, i):
             elements_by_id[f"{element.get('type')}-{element.get('id')}"] = element
-        time.sleep(1)
+        time.sleep(0.5)
     features = [f for e in elements_by_id.values() if (f := way_feature(e))]
     collection = {
         "type": "FeatureCollection",
