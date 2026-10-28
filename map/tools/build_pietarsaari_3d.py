@@ -25,8 +25,9 @@ def xy(lon, lat):
 def get_elevations(locations):
     # Open-Meteo's public elevation endpoint accepts comma-separated coordinates.
     vals = []
-    for start in range(0, len(locations), 80):
-        batch = locations[start:start+80]
+    # Keep requests short enough for common URL limits; the API accepts coordinate lists.
+    for start in range(0, len(locations), 20):
+        batch = locations[start:start+20]
         params = {
             "latitude": ",".join(f"{lat:.6f}" for lat, lon in batch),
             "longitude": ",".join(f"{lon:.6f}" for lat, lon in batch),
