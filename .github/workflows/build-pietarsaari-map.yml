@@ -42,6 +42,10 @@ jobs:
           PY
       - name: Render styled vector map
         run: python map/tools/render_pietarsaari_map.py
+      - name: Build 3D terrain and buildings
+        run: |
+          python -m pip install --disable-pip-version-check numpy trimesh shapely mapbox-earcut
+          python map/tools/build_pietarsaari_3d.py
       - name: Publish SVG preview to repository
         run: |
           mkdir -p map/preview
@@ -58,5 +62,6 @@ jobs:
           path: |
             map/data/pietarsaari_osm.geojson
             map/data/pietarsaari_map.svg
+            map/data/pietarsaari_3d.glb
           if-no-files-found: error
           retention-days: 30
