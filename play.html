@@ -55,7 +55,7 @@ const scene=new THREE.Scene();scene.background=new THREE.Color(0xa9cce5);scene.f
 const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.1,8000);camera.rotation.order='YXZ';
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;document.body.appendChild(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xe5f4ff,0x5a604e,2.1));const sun=new THREE.DirectionalLight(0xfff2d9,2.2);sun.position.set(-900,1400,700);scene.add(sun);
-let mapRoot=null, yaw=0,pitch=0,playing=false,loaded=false,camY=1.7,moveForward=0,moveSide=0,run=false;
+let mapRoot=null, yaw=0,pitch=0,playing=false,loaded=false,camY=1.7,spawnY=1.7,moveForward=0,moveSide=0,run=false;
 const keys={};
 const loader=new GLTFLoader();
 const loadTimer=setTimeout(()=>{if(!loaded){status.textContent='Загрузка зависла';loadMsg.textContent='3D-файл не ответил за 45 секунд. Проверь интернет и нажми кнопку, чтобы попробовать снова.';go.disabled=false;go.textContent='ПОПРОБОВАТЬ СНОВА';go.onclick=()=>location.reload();}},45000);
@@ -77,7 +77,7 @@ loader.load('./map/preview/pietarsaari_3d.glb',g=>{
  let terrainMesh=null;
  mapRoot.traverse(o=>{if(!terrainMesh && o.isMesh && /terrain/i.test(o.name)) terrainMesh=o;});
  const raycaster=new THREE.Raycaster();
- let spawnY=camY;
+ spawnY=camY;
  if(terrainMesh){
    raycaster.set(new THREE.Vector3(0,10000,0),new THREE.Vector3(0,-1,0));
    const hit=raycaster.intersectObject(terrainMesh,true)[0];
@@ -108,7 +108,7 @@ function stopLook(e){if(e.pointerId===lookId)lookId=null;}renderer.domElement.ad
 const up=document.querySelector('#up');up.addEventListener('pointerdown',e=>{run=true;up.setPointerCapture(e.pointerId)});up.addEventListener('pointerup',()=>run=false);up.addEventListener('pointercancel',()=>run=false);
 const clock=new THREE.Clock();
 function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.04);camera.rotation.set(pitch,yaw,0,'YXZ');
- if(playing&&loaded){let f=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)-stickY;let s=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+stickX;const l=Math.hypot(f,s)||1;const speed=(keys.ShiftLeft||run?8:4.2)*dt;camera.position.x+=(Math.sin(yaw)*f+Math.cos(yaw)*s)/l*speed;camera.position.z+=(Math.cos(yaw)*f-Math.sin(yaw)*s)/l*speed;camera.position.x=THREE.MathUtils.clamp(camera.position.x,-2470,2470);camera.position.z=THREE.MathUtils.clamp(camera.position.z,-2470,2470);camera.position.y=camY;}
+ if(playing&&loaded){let f=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)-stickY;let s=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+stickX;const l=Math.hypot(f,s)||1;const speed=(keys.ShiftLeft||run?8:4.2)*dt;camera.position.x+=(Math.sin(yaw)*f+Math.cos(yaw)*s)/l*speed;camera.position.z+=(Math.cos(yaw)*f-Math.sin(yaw)*s)/l*speed;camera.position.x=THREE.MathUtils.clamp(camera.position.x,-2470,2470);camera.position.z=THREE.MathUtils.clamp(camera.position.z,-2470,2470);camera.position.y=spawnY;}
  renderer.render(scene,camera);}
 animate();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 </script>
