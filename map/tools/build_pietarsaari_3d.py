@@ -11,7 +11,7 @@ from shapely.ops import unary_union, triangulate
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "data" / "pietarsaari_osm.geojson"
 OUTPUT = ROOT / "data" / "pietarsaari_3d.glb"
-GRID = 61  # finer elevation grid: 60 x 60 terrain cells
+GRID = 101  # 100 x 100 terrain cells for smoother ground
 LAT0, LON0 = 63.674, 22.704
 METERS_PER_DEG_LAT = 111320.0
 METERS_PER_DEG_LON = 111320.0 * math.cos(math.radians(LAT0))
@@ -192,7 +192,23 @@ def main():
             a = j*GRID+i; b=a+1; c=a+GRID; d=c+1
             faces.extend([[a,b,d],[a,d,c]])
     terrain = trimesh.Trimesh(vertices=np.asarray(terrain_vertices), faces=np.asarray(faces), process=False)
-    terrain.visual.face_colors = [116, 139, 99, 255]
+    # Subtle natural variation in soil/vegetation color, without changing measured elevations.
+    elev_span = max(float(np.ptp(elevations)), 0.01)
+    terrain_colours = []
+    for j, y in enumerate(ys):
+        for i, x in enumerate(xs):
+            elev = float(elevations[j, i])
+            broad = math.sin(x / 145.0 + 0.7) * math.cos(y / 173.0 - 0.4)
+            fine = math.sin(x / 43.0 + y / 57.0) * 0.5
+            texture = broad * 7.0 + fine * 2.0
+            wetness = (elev - float(elevations.min())) / elev_span
+            terrain_colours.append([
+                int(np.clip(105 + texture - wetness * 5, 0, 255)),
+                int(np.clip(119 + texture - wetness * 2, 0, 255)),
+                int(np.clip(83 + texture + wetness * 4, 0, 255)),
+                255
+            ])
+    terrain.visual.vertex_colors = np.asarray(terrain_colours, dtype=np.uint8)
     scene = trimesh.Scene()
     scene.add_geometry(terrain, node_name="terrain_real_elevation")
 
@@ -265,7 +281,7 @@ def main():
         elif props.get("highway"):
             for line in (geom.get("coordinates") or [],):
                 if geom.get("type") == "LineString" and len(line) >= 2:
-                    roads.append((props.get("highway"), LineString([xy(p[0],p[1]) for p in line])))
+                    roads.append((props.get("highway"), LineString([xy(p[0],p[1]) for p in line]), props))
 
     # Build actual road footprints from mapped OSM centerlines, with class-based widths.
     # These are solid 3D decks draped over terrain, not flat lines in a drawing.
@@ -287,14 +303,21 @@ def main():
         "path": [161, 155, 139, 255], "pedestrian": [157, 151, 137, 255],
         "steps": [164, 158, 145, 255],
     }
-    for kind, line in roads:
+    for kind, line, road_props in roads:
         width = road_widths.get(str(kind), 2.8)
         road_poly = line.buffer(width / 2, cap_style="flat", join_style="round")
         for part in polygon_parts(road_poly):
             if part.area < 1.2:
                 continue
             try:
-                mesh = solid_draped_road_mesh(part, elevations, zbase, lift=0.14, thickness=0.18)
+                layer = numeric_tag(road_props.get("layer")) or 0.0
+                if str(road_props.get("tunnel", "")).lower() in ("yes", "building_passage"):
+                    lift = -1.2
+                elif str(road_props.get("bridge", "")).lower() in ("yes", "viaduct", "aqueduct"):
+                    lift = max(2.8, layer * 3.5) + 0.055
+                else:
+                    lift = max(0.055, layer * 3.5 + 0.055)
+                mesh = solid_draped_road_mesh(part, elevations, zbase, lift=lift, thickness=0.12)
                 if mesh is None:
                     continue
                 mesh.visual.face_colors = road_colours.get(str(kind), [112, 111, 106, 255])
