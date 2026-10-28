@@ -56,19 +56,23 @@ const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.1,8000);came
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;document.body.appendChild(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xe5f4ff,0x5a604e,2.1));const sun=new THREE.DirectionalLight(0xfff2d9,2.2);sun.position.set(-900,1400,700);scene.add(sun);
 let mapRoot=null, yaw=0,pitch=0,playing=false,loaded=false,camY=1.7,spawnY=1.7,moveForward=0,moveSide=0,run=false,flying=false,riseHeld=false,lowerHeld=false;
+let terrainMesh=null;
+const groundRaycaster=new THREE.Raycaster();
+const groundHeightAt=(x,z)=>{if(!terrainMesh)return null;groundRaycaster.set(new THREE.Vector3(x,10000,z),new THREE.Vector3(0,-1,0));const hit=groundRaycaster.intersectObject(terrainMesh,true)[0];return hit?hit.point.y:null;};
 const keys={};
 const loader=new GLTFLoader();
 const loadTimer=setTimeout(()=>{if(!loaded){status.textContent='Загрузка зависла';loadMsg.textContent='3D-файл не ответил за 45 секунд. Проверь интернет и нажми кнопку, чтобы попробовать снова.';go.disabled=false;go.textContent='ПОПРОБОВАТЬ СНОВА';go.onclick=()=>location.reload();}},45000);
 loader.load('./map/preview/pietarsaari_3d.glb',g=>{
  clearTimeout(loadTimer);
  mapRoot=g.scene;
- // Work only with the EXISTING GLB: align road vertices to the terrain mesh
- // instead of lifting every road by one fixed amount (which caused floating roads).
+ // Keep the existing GLB geometry intact during startup. The builder already
+ // drapes roads and land polygons over the elevation grid; doing thousands of
+ // synchronous raycasts here blocks the browser before the map can appear.
  const roadMeshes=[], buildingMeshes=[], terrainMeshes=[];
  mapRoot.traverse(o=>{
   if(o.isMesh && o.geometry && o.geometry.attributes.position){
    const mats=Array.isArray(o.material)?o.material:[o.material];
-   for(const m of mats){if(m){m.side=THREE.DoubleSide;}}
+   for(const m of mats){if(m)m.side=THREE.DoubleSide;}
    if(/^road_/i.test(o.name)){
     roadMeshes.push(o);
     for(const m of mats){if(m && m.color){m.color.set(0x777b7d);m.roughness=0.96;m.metalness=0;m.needsUpdate=true;}}
@@ -80,69 +84,8 @@ loader.load('./map/preview/pietarsaari_3d.glb',g=>{
    }
   }
  });
- // Source GLB is Z-up; rotate into Three.js Y-up world before fitting assets to terrain.
+ // Source GLB is Z-up; rotate into Three.js Y-up world.
  mapRoot.rotation.x=-Math.PI/2;
- mapRoot.updateMatrixWorld(true);
- if(terrainMeshes.length){
-  const terrainBounds=new THREE.Box3();
-  for(const t of terrainMeshes) terrainBounds.expandByObject(t);
-  const raycaster=new THREE.Raycaster();
-  const down=new THREE.Vector3(0,-1,0), world=new THREE.Vector3(), local=new THREE.Vector3();
-  const terrainHeightAt=(x,z)=>{
-   raycaster.set(new THREE.Vector3(x,terrainBounds.max.y+100,z),down);
-   const hits=raycaster.intersectObjects(terrainMeshes,true);
-   return hits.length ? hits[0].point.y : null;
-  };
-  // Keep loading responsive: project a limited, evenly spaced set of road vertices
-  // onto terrain. Full per-vertex raycasting on the entire city mesh can freeze mobile browsers.
-  let snapped=0;
-  const maxRoadSamples=18000;
-  let totalRoadVertices=0;
-  for(const road of roadMeshes) totalRoadVertices+=road.geometry.attributes.position.count;
-  const stride=Math.max(1,Math.ceil(totalRoadVertices/maxRoadSamples));
-  let globalIndex=0;
-  for(const road of roadMeshes){
-   const pos=road.geometry.attributes.position;
-   const inverse=road.matrixWorld.clone().invert();
-   let changed=false;
-   for(let i=0;i<pos.count;i++,globalIndex++){
-    if(globalIndex%stride!==0) continue;
-    world.fromBufferAttribute(pos,i).applyMatrix4(road.matrixWorld);
-    const ground=terrainHeightAt(world.x,world.z);
-    if(ground!==null){
-     world.y=ground+0.10;
-     local.copy(world).applyMatrix4(inverse);
-     pos.setXYZ(i,local.x,local.y,local.z);
-     snapped++;
-     changed=true;
-    }
-   }
-   if(changed){
-    pos.needsUpdate=true;
-    road.geometry.computeVertexNormals();
-   }
-  }
-  // Buildings were extruded from one flat base height, so on hills their lower
-  // floors can be buried. Lift each building by the terrain difference at its footprint centre.
-  let grounded=0;
-  mapRoot.updateMatrixWorld(true);
-  for(const building of buildingMeshes){
-   building.geometry.computeBoundingBox();
-   const box=building.geometry.boundingBox;
-   if(!box) continue;
-   const bottomLocal=new THREE.Vector3((box.min.x+box.max.x)/2,(box.min.y+box.max.y)/2,box.min.z);
-   const bottomWorld=bottomLocal.clone().applyMatrix4(building.matrixWorld);
-   const ground=terrainHeightAt(bottomWorld.x,bottomWorld.z);
-   if(ground!==null && bottomWorld.y<ground+0.12){
-    const delta=ground+0.12-bottomWorld.y;
-    // The source GLB is Z-up; local +Z becomes world +Y after mapRoot rotation.
-    building.position.z += delta;
-    grounded++;
-    mapRoot.updateMatrixWorld(true);
-   }
-  }
-  console.info('Brokeville terrain fit: road vertices',snapped,'; buildings lifted',grounded);
- }
  mapRoot.updateMatrixWorld(true);
  const bounds=new THREE.Box3().setFromObject(mapRoot);
  const size=bounds.getSize(new THREE.Vector3());
@@ -155,7 +98,7 @@ loader.load('./map/preview/pietarsaari_3d.glb',g=>{
  // Find the terrain and derive spawn height from its actual vertices.
  // Raycasting can miss a terrain mesh if its triangle winding faces downward,
  // so use the nearest transformed terrain vertex as a reliable fallback.
- let terrainMesh=null;
+ terrainMesh=null;
  mapRoot.traverse(o=>{if(!terrainMesh && o.isMesh && /terrain/i.test(o.name)) terrainMesh=o;});
  spawnY=camY;
  if(terrainMesh && terrainMesh.geometry && terrainMesh.geometry.attributes.position){
