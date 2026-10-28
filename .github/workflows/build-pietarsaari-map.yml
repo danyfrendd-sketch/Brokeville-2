@@ -1,90 +1,21 @@
-name: Build Pietarsaari map data
+name: Protect current Pietarsaari map
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - "map/tools/download_pietarsaari_osm.py"
-      - "map/tools/render_pietarsaari_map.py"
-      - "map/tools/build_pietarsaari_3d.py"
-      - ".github/workflows/build-pietarsaari-map.yml"
 
 permissions:
-  contents: write
+  contents: read
 
-concurrency:
-  group: pietarsaari-map-build
-  cancel-in-progress: true
-
+# This workflow intentionally does NOT download map data, rebuild the map, or replace
+# the existing GLB. The current map in map/preview/pietarsaari_3d.glb is the source of truth.
 jobs:
-  download:
+  verify-current-map:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     steps:
-      - name: Checkout repository
+      - name: Checkout current project
         uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Restore cached map geometry
-        id: map-cache
-        uses: actions/cache@v4
-        with:
-          path: map/data/pietarsaari_osm.geojson
-          key: pietarsaari-osm-source-v1
-          restore-keys: |
-            pietarsaari-osm-source-
-      - name: Download OSM geometry only when no saved source exists
-        if: steps.map-cache.outputs.cache-hit != 'true'
-        run: python -u map/tools/download_pietarsaari_osm.py
-      - name: Validate downloaded GeoJSON
+      - name: Verify existing map files without downloading anything
         run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          p = Path("map/data/pietarsaari_osm.geojson")
-          data = json.loads(p.read_text(encoding="utf-8"))
-          features = data.get("features", [])
-          print(f"GeoJSON: {p}; features: {len(features)}; bytes: {p.stat().st_size}")
-          if not features:
-              raise SystemExit("No features were downloaded")
-          from collections import Counter
-          print("Top tags:", Counter(
-              k for f in features for k in (f.get("properties") or {}).keys()
-          ).most_common(20))
-          PY
-      - name: Render styled vector map
-        run: python map/tools/render_pietarsaari_map.py
-      - name: Build 3D terrain and buildings
-        run: |
-          python -m pip install --disable-pip-version-check numpy scipy trimesh shapely mapbox-earcut
-          python -u map/tools/build_pietarsaari_3d.py
-      - name: Publish SVG preview to repository
-        run: |
-          mkdir -p map/preview
-          cp map/data/pietarsaari_map.svg map/preview/pietarsaari-map.svg
-          cp map/data/pietarsaari_3d.glb map/preview/pietarsaari_3d.glb
-      - name: Commit and publish map files safely
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add map/preview/pietarsaari-map.svg map/preview/pietarsaari_3d.glb
-          if git diff --cached --quiet; then
-            echo "No map preview changes to commit."
-            exit 0
-          fi
-          git commit -m "Build updated Pietarsaari map preview"
-          git fetch origin main
-          git rebase origin/main
-          git push origin HEAD:main
-      - name: Upload map outputs
-        uses: actions/upload-artifact@v4
-        with:
-          name: pietarsaari-map-build
-          path: |
-            map/data/pietarsaari_osm.geojson
-            map/data/pietarsaari_map.svg
-            map/data/pietarsaari_3d.glb
-          if-no-files-found: error
-          retention-days: 30
+          test -s map/preview/pietarsaari_3d.glb
+          test -s play.html
+          echo "Using the existing map only. No OSM download or map rebuild was run."
