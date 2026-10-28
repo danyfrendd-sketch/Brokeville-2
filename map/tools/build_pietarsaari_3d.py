@@ -133,6 +133,40 @@ def draped_polygon_mesh(poly, elevations, zbase, lift=0.03):
     return trimesh.Trimesh(vertices=np.asarray(vertices), faces=np.asarray(faces), process=False)
 
 
+
+def solid_draped_road_mesh(poly, elevations, zbase, lift=0.14, thickness=0.18):
+    """Create a road deck that follows terrain, with visible solid edges."""
+    top = draped_polygon_mesh(poly, elevations, zbase, lift=lift)
+    if top is None:
+        return None
+    vertices = top.vertices.tolist()
+    faces = top.faces.tolist()
+    lookup = {(round(float(v[0]), 4), round(float(v[1]), 4)): i
+              for i, v in enumerate(vertices)}
+    rings = [poly.exterior] + list(poly.interiors)
+    for ring in rings:
+        coords = list(ring.coords)
+        if len(coords) < 4:
+            continue
+        top_ids = []
+        bottom_ids = []
+        for x, y in coords[:-1]:
+            key = (round(x, 4), round(y, 4))
+            top_id = lookup.get(key)
+            if top_id is None:
+                top_id = len(vertices)
+                vertices.append([x, y, ground_z(x, y, elevations, zbase) + lift])
+                lookup[key] = top_id
+            bottom_id = len(vertices)
+            vertices.append([x, y, ground_z(x, y, elevations, zbase) + lift - thickness])
+            top_ids.append(top_id)
+            bottom_ids.append(bottom_id)
+        for i in range(len(top_ids)):
+            j = (i + 1) % len(top_ids)
+            faces.append([top_ids[i], bottom_ids[i], bottom_ids[j]])
+            faces.append([top_ids[i], bottom_ids[j], top_ids[j]])
+    return trimesh.Trimesh(vertices=np.asarray(vertices), faces=np.asarray(faces), process=False)
+
 def main():
     data = json.loads(SOURCE.read_text(encoding="utf-8"))
     features = data.get("features", [])
@@ -233,17 +267,37 @@ def main():
                 if geom.get("type") == "LineString" and len(line) >= 2:
                     roads.append((props.get("highway"), LineString([xy(p[0],p[1]) for p in line])))
 
-    # Roads are thin raised strips following the sampled ground surface.
+    # Build actual road footprints from mapped OSM centerlines, with class-based widths.
+    # These are solid 3D decks draped over terrain, not flat lines in a drawing.
     road_meshes = 0
+    road_widths = {
+        "motorway": 9.0, "trunk": 8.0, "primary": 7.0, "secondary": 6.0,
+        "tertiary": 5.2, "residential": 4.5, "unclassified": 4.0,
+        "living_street": 4.0, "service": 3.2, "track": 2.6,
+        "cycleway": 2.0, "footway": 1.5, "path": 1.2, "pedestrian": 2.2,
+        "steps": 1.2,
+    }
+    road_colours = {
+        "motorway": [83, 82, 78, 255], "trunk": [86, 85, 81, 255],
+        "primary": [91, 90, 85, 255], "secondary": [96, 95, 90, 255],
+        "tertiary": [105, 104, 99, 255], "residential": [112, 111, 106, 255],
+        "unclassified": [112, 111, 106, 255], "living_street": [124, 122, 116, 255],
+        "service": [118, 117, 111, 255], "track": [128, 123, 108, 255],
+        "cycleway": [151, 146, 128, 255], "footway": [161, 155, 139, 255],
+        "path": [161, 155, 139, 255], "pedestrian": [157, 151, 137, 255],
+        "steps": [164, 158, 145, 255],
+    }
     for kind, line in roads:
-        width = 5.0 if kind in ("primary","trunk","secondary") else 3.0 if kind in ("tertiary","residential","unclassified") else 1.8
-        road_poly = line.buffer(width/2, cap_style="flat", join_style="round")
+        width = road_widths.get(str(kind), 2.8)
+        road_poly = line.buffer(width / 2, cap_style="flat", join_style="round")
         for part in polygon_parts(road_poly):
-            if part.area < 2: continue
+            if part.area < 1.2:
+                continue
             try:
-                mesh = draped_polygon_mesh(part, elevations, zbase, lift=0.12)
-                if mesh is None: continue
-                mesh.visual.face_colors = [75, 75, 72, 255]
+                mesh = solid_draped_road_mesh(part, elevations, zbase, lift=0.14, thickness=0.18)
+                if mesh is None:
+                    continue
+                mesh.visual.face_colors = road_colours.get(str(kind), [112, 111, 106, 255])
                 scene.add_geometry(mesh, node_name=f"road_{road_meshes}")
                 road_meshes += 1
             except Exception:
