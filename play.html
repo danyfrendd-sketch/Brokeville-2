@@ -28,6 +28,9 @@ button{border:0;border-radius:12px;padding:14px 19px;background:#8be09b;color:#1
 <button id="home" hidden>В начало</button>
 <div id="start"><div id="panel"><h1>Brokeville 2</h1><p>Загружаю реальную геометрию улиц, дорог, зданий и рельефа Пиетарсаари. Модель может загружаться некоторое время.</p><p id="loadMsg">Подключение к 3D-карте…</p><button id="go" disabled>ЗАГРУЗКА…</button></div></div>
 <div id="controls"><div id="stickBase"><div id="stick"></div></div><button id="up">↑</button><div id="lookHint">Проведи пальцем справа, чтобы смотреть</div></div>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}
+</script>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
