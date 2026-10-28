@@ -1,0 +1,62 @@
+name: Build isolated Pietarsaari v2 GLB
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout selected branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install geometry dependencies
+        run: python -m pip install --disable-pip-version-check numpy trimesh shapely mapbox-earcut
+
+      - name: Validate recovered source
+        run: |
+          test -s map/data/pietarsaari_osm.geojson
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("map/data/pietarsaari_osm.geojson")
+          data = json.loads(p.read_text(encoding="utf-8"))
+          assert data.get("type") == "FeatureCollection"
+          assert len(data.get("features", [])) == 34934
+          print(f"Validated {len(data['features'])} source features")
+          PY
+
+      - name: Build v2 without touching v1
+        run: python map/tools/build_pietarsaari_3d_v2.py
+
+      - name: Validate generated GLB
+        run: |
+          test -s map/preview/pietarsaari_3d_v2.glb
+          python - <<'PY'
+          import trimesh
+          p = "map/preview/pietarsaari_3d_v2.glb"
+          scene = trimesh.load(p, force="scene")
+          assert len(scene.geometry) > 0, "GLB contains no geometry"
+          print(f"GLB valid: {len(scene.geometry)} geometry objects")
+          PY
+
+      - name: Commit generated v2 to the selected branch
+        run: |
+          git add map/preview/pietarsaari_3d_v2.glb
+          if git diff --cached --quiet; then
+            echo "Generated v2 is unchanged; no commit needed."
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Build isolated Pietarsaari 3D map v2"
+          git push origin HEAD
