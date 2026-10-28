@@ -123,9 +123,9 @@ loader.load('./map/preview/pietarsaari_3d.glb',g=>{
    const bottomWorld=bottomLocal.clone().applyMatrix4(building.matrixWorld);
    const ground=terrainHeightAt(bottomWorld.x,bottomWorld.z);
    if(ground!==null && bottomWorld.y<ground+0.12){
-    building.position.z += 0; // keep parent-space transforms intact
     const delta=ground+0.12-bottomWorld.y;
-    building.position.y += delta;
+    // The source GLB is Z-up; local +Z becomes world +Y after mapRoot rotation.
+    building.position.z += delta;
     grounded++;
     mapRoot.updateMatrixWorld(true);
    }
