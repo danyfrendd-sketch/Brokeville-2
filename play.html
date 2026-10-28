@@ -28,12 +28,28 @@ button{border:0;border-radius:12px;padding:14px 19px;background:#8be09b;color:#1
 <button id="home" hidden>В начало</button>
 <div id="start"><div id="panel"><h1>Brokeville 2</h1><p>Загружаю реальную геометрию улиц, дорог, зданий и рельефа Пиетарсаари. Модель может загружаться некоторое время.</p><p id="loadMsg">Подключение к 3D-карте…</p><button id="go" disabled>ЗАГРУЗКА…</button></div></div>
 <div id="controls"><div id="stickBase"><div id="stick"></div></div><button id="up">↑</button><div id="lookHint">Проведи пальцем справа, чтобы смотреть</div></div>
-<script type="importmap">
-{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}
+<script>
+/* Keep a visible diagnostic even if a browser blocks the 3D JavaScript modules. */
+window.__brokevilleLoadWatch = setTimeout(() => {
+ const s=document.querySelector('#status'), m=document.querySelector('#loadMsg'), b=document.querySelector('#go');
+ if(s && s.textContent.includes('Загрузка')) s.textContent='Ошибка запуска 3D';
+ if(m && m.textContent.includes('Подключение')) m.textContent='Скрипт 3D не запустился. Обнови страницу; если ошибка повторится, сообщи мне.';
+ if(b && b.disabled){b.disabled=false;b.textContent='ОБНОВИТЬ';b.onclick=()=>location.reload();}
+}, 20000);
+window.addEventListener('error', e => {
+ const s=document.querySelector('#status'), m=document.querySelector('#loadMsg');
+ if(s) s.textContent='Ошибка JavaScript';
+ if(m) m.textContent='Не удалось запустить 3D-модуль: '+(e.message||'ошибка загрузки').slice(0,120);
+});
+window.addEventListener('unhandledrejection', e => {
+ const s=document.querySelector('#status'), m=document.querySelector('#loadMsg');
+ if(s) s.textContent='Ошибка загрузки 3D';
+ if(m) m.textContent='Ошибка подключения: '+String(e.reason||'неизвестная ошибка').slice(0,120);
+});
 </script>
 <script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
-import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+import * as THREE from 'https://esm.sh/three@0.160.0';
+import { GLTFLoader } from 'https://esm.sh/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 const status=document.querySelector('#status'), start=document.querySelector('#start'), go=document.querySelector('#go'), loadMsg=document.querySelector('#loadMsg'), controls=document.querySelector('#controls');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xa9cce5);scene.fog=new THREE.Fog(0xa9cce5,180,2200);
 const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.1,8000);camera.rotation.order='YXZ';
