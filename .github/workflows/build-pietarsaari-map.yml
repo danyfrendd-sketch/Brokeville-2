@@ -12,6 +12,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: pietarsaari-map-build
+  cancel-in-progress: false
+
 jobs:
   download:
     runs-on: ubuntu-latest
@@ -52,11 +56,19 @@ jobs:
           mkdir -p map/preview
           cp map/data/pietarsaari_map.svg map/preview/pietarsaari-map.svg
           cp map/data/pietarsaari_3d.glb map/preview/pietarsaari_3d.glb
-      - name: Commit updated SVG preview
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Build updated Pietarsaari map preview"
-          file_pattern: map/preview/pietarsaari-map.svg map/preview/pietarsaari_3d.glb
+      - name: Commit and publish map files safely
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add map/preview/pietarsaari-map.svg map/preview/pietarsaari_3d.glb
+          if git diff --cached --quiet; then
+            echo "No map preview changes to commit."
+            exit 0
+          fi
+          git commit -m "Build updated Pietarsaari map preview"
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
       - name: Upload map outputs
         uses: actions/upload-artifact@v4
         with:
