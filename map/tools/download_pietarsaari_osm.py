@@ -50,19 +50,19 @@ def fetch_tile(tile, tile_no):
     query = QUERY_TEMPLATE.format(s=s, w=w, n=n, e=e)
     body = urllib.parse.urlencode({"data": query}).encode()
     errors = []
-    for attempt in range(3):
+    for attempt in range(2):
         for endpoint in OVERPASS_ENDPOINTS:
             try:
                 req = urllib.request.Request(endpoint, data=body, headers={
-                    "User-Agent": "Brokeville2-map-builder/0.3 (OSM data downloader)"
+                    "User-Agent": "Brokeville2-map-builder/0.4 (OSM data downloader; bounded retries)"
                 }, method="POST")
-                with urllib.request.urlopen(req, timeout=115) as response:
+                with urllib.request.urlopen(req, timeout=20) as response:
                     result = json.load(response)
                 print(f"Tile {tile_no}/4: received {len(result.get('elements', []))} OSM elements")
                 return result.get("elements", [])
             except Exception as exc:
                 errors.append(f"{endpoint}: {exc}")
-                time.sleep(2 + attempt * 2)
+                time.sleep(1 + attempt)
     raise RuntimeError(f"Tile {tile_no}/4 failed after retries: " + " | ".join(errors[-3:]))
 
 def way_feature(element):
