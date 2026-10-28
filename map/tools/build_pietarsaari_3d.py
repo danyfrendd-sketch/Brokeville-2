@@ -11,7 +11,7 @@ from shapely.ops import unary_union, triangulate
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "data" / "pietarsaari_osm.geojson"
 OUTPUT = ROOT / "data" / "pietarsaari_3d.glb"
-GRID = 101  # 100 x 100 terrain cells for smoother ground
+GRID = 151  # 150 x 150 terrain cells; smoother terrain under existing mapped roads
 LAT0, LON0 = 63.674, 22.704
 METERS_PER_DEG_LAT = 111320.0
 METERS_PER_DEG_LON = 111320.0 * math.cos(math.radians(LAT0))
@@ -271,7 +271,7 @@ def main():
                 for part in polygon_parts(poly):
                     if part.area < 12 or not part.is_valid: continue
                     try:
-                        mesh = draped_polygon_mesh(part, elevations, zbase, lift=0.045)
+                        mesh = draped_polygon_mesh(part, elevations, zbase, lift=0.025)
                         if mesh is None: continue
                         mesh.visual.face_colors = fill
                         scene.add_geometry(mesh, node_name=f"landcover_{land_meshes}")
@@ -287,11 +287,11 @@ def main():
     # These are solid 3D decks draped over terrain, not flat lines in a drawing.
     road_meshes = 0
     road_widths = {
-        "motorway": 9.0, "trunk": 8.0, "primary": 7.0, "secondary": 6.0,
-        "tertiary": 5.2, "residential": 4.5, "unclassified": 4.0,
-        "living_street": 4.0, "service": 3.2, "track": 2.6,
-        "cycleway": 2.0, "footway": 1.5, "path": 1.2, "pedestrian": 2.2,
-        "steps": 1.2,
+        "motorway": 10.5, "trunk": 9.0, "primary": 8.0, "secondary": 7.0,
+        "tertiary": 6.0, "residential": 5.0, "unclassified": 4.4,
+        "living_street": 4.2, "service": 3.5, "track": 2.8,
+        "cycleway": 1.8, "footway": 1.25, "path": 1.0, "pedestrian": 2.4,
+        "steps": 1.0,
     }
     road_colours = {
         "motorway": [83, 82, 78, 255], "trunk": [86, 85, 81, 255],
@@ -316,8 +316,8 @@ def main():
                 elif str(road_props.get("bridge", "")).lower() in ("yes", "viaduct", "aqueduct"):
                     lift = max(2.8, layer * 3.5) + 0.055
                 else:
-                    lift = max(0.055, layer * 3.5 + 0.055)
-                mesh = solid_draped_road_mesh(part, elevations, zbase, lift=lift, thickness=0.12)
+                    lift = max(0.09, layer * 3.5 + 0.09)
+                mesh = solid_draped_road_mesh(part, elevations, zbase, lift=lift, thickness=0.08)
                 if mesh is None:
                     continue
                 mesh.visual.face_colors = road_colours.get(str(kind), [112, 111, 106, 255])
