@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Download OSM geometry
-        run: python map/tools/download_pietarsaari_osm.py
+        run: python -u map/tools/download_pietarsaari_osm.py
       - name: Validate downloaded GeoJSON
         run: |
           python - <<'PY'
@@ -45,8 +45,8 @@ jobs:
         run: python map/tools/render_pietarsaari_map.py
       - name: Build 3D terrain and buildings
         run: |
-          python -m pip install --disable-pip-version-check numpy trimesh shapely mapbox-earcut
-          python map/tools/build_pietarsaari_3d.py
+          python -m pip install --disable-pip-version-check numpy scipy trimesh shapely mapbox-earcut
+          python -u map/tools/build_pietarsaari_3d.py
       - name: Publish SVG preview to repository
         run: |
           mkdir -p map/preview
