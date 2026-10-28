@@ -27,7 +27,7 @@ button{border:0;border-radius:12px;padding:14px 19px;background:#8be09b;color:#1
 <div id="status">Загрузка 3D-карты…</div>
 <button id="home" hidden>К старту</button><button id="fly" hidden>✈ ПОЛЁТ: ВЫКЛ</button>
 <div id="start"><div id="panel"><h1>Brokeville 2</h1><p>Загружаю реальную геометрию улиц, дорог, зданий и рельефа Пиетарсаари. Модель может загружаться некоторое время.</p><p id="loadMsg">Подключение к 3D-карте…</p><button id="go" disabled>ЗАГРУЗКА…</button></div></div>
-<div id="controls"><div id="stickBase"><div id="stick"></div></div><button id="up">БЕГ</button><button id="rise">ВВЕРХ</button><button id="lower">ВНИЗ</button><div id="lookHint">Справа — обзор. Кнопка «Полёт» — свободный полёт</div></div>
+<div id="controls"><div id="stickBase"><div id="stick"></div></div><button id="up">⚡ БЕГ</button><button id="rise">ВВЕРХ</button><button id="lower">ВНИЗ</button><div id="lookHint">Справа — обзор. Кнопка «Полёт» — свободный полёт</div></div>
 <script>
 /* Keep a visible diagnostic even if a browser blocks the 3D JavaScript modules. */
 window.__brokevilleLoadWatch = setTimeout(() => {
@@ -119,7 +119,7 @@ const up=document.querySelector('#up');up.addEventListener('pointerdown',e=>{run
 for(const [id,field] of [['rise','riseHeld'],['lower','lowerHeld']]){const el=document.querySelector('#'+id);el.addEventListener('pointerdown',e=>{if(field==='riseHeld')riseHeld=true;else lowerHeld=true;el.setPointerCapture(e.pointerId)});const stop=()=>{if(field==='riseHeld')riseHeld=false;else lowerHeld=false;};el.addEventListener('pointerup',stop);el.addEventListener('pointercancel',stop);}
 const clock=new THREE.Clock();
 function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.04);camera.rotation.set(pitch,yaw,0,'YXZ');
- if(playing&&loaded){let f=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)-stickY;let s=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+stickX;const l=Math.hypot(f,s)||1;const speed=(keys.ShiftLeft||run?8:4.2)*dt;camera.position.x+=(-Math.sin(yaw)*f+Math.cos(yaw)*s)/l*speed;camera.position.z+=(-Math.cos(yaw)*f-Math.sin(yaw)*s)/l*speed;camera.position.x=THREE.MathUtils.clamp(camera.position.x,-2470,2470);camera.position.z=THREE.MathUtils.clamp(camera.position.z,-2470,2470);if(flying){const vertical=((keys.Space||riseHeld)?1:0)-((keys.ControlLeft||keys.ControlRight||lowerHeld)?1:0);camera.position.y=THREE.MathUtils.clamp(camera.position.y+vertical*speed*1.4,2,1600);}else{camera.position.y=spawnY;}}
+ if(playing&&loaded){let f=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)-stickY;let s=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+stickX;const l=Math.hypot(f,s)||1;const speed=(flying?28:(keys.ShiftLeft||run?22:10))*dt;camera.position.x+=(-Math.sin(yaw)*f+Math.cos(yaw)*s)/l*speed;camera.position.z+=(-Math.cos(yaw)*f-Math.sin(yaw)*s)/l*speed;camera.position.x=THREE.MathUtils.clamp(camera.position.x,-2470,2470);camera.position.z=THREE.MathUtils.clamp(camera.position.z,-2470,2470);if(flying){const vertical=((keys.Space||riseHeld)?1:0)-((keys.ControlLeft||keys.ControlRight||lowerHeld)?1:0);camera.position.y=THREE.MathUtils.clamp(camera.position.y+vertical*speed*1.4,2,1600);}else{camera.position.y=spawnY;}}
  renderer.render(scene,camera);}
 animate();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 </script>
