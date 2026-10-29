@@ -1,0 +1,43 @@
+name: Recover original OSM source
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download and verify original artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 40603748114 --repo "${GITHUB_REPOSITORY}" --name pietarsaari-osm-geojson --dir /tmp/osm-artifact
+          test -s /tmp/osm-artifact/pietarsaari_osm.geojson
+          echo "cb6511ce4c1da0a58394fcb3203765d6af55d2d7762d6d674d7f036fec110cd2  /tmp/osm-artifact/pietarsaari_osm.geojson" | sha256sum -c -
+
+      - name: Validate and save source on a separate branch
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("/tmp/osm-artifact/pietarsaari_osm.geojson")
+          data = json.loads(p.read_text(encoding="utf-8"))
+          assert data.get("type") == "FeatureCollection"
+          assert len(data.get("features", [])) == 34934
+          print(f"Validated {len(data['features'])} GeoJSON features")
+          PY
+          git checkout -B data/recovered-osm-source
+          mkdir -p map/data
+          cp /tmp/osm-artifact/pietarsaari_osm.geojson map/data/pietarsaari_osm.geojson
+          git add map/data/pietarsaari_osm.geojson
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Restore verified Pietarsaari OSM source data"
+          git push --force-with-lease origin data/recovered-osm-source
