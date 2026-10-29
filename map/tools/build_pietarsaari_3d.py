@@ -23,38 +23,62 @@ def xy(lon, lat):
 
 
 def get_elevations(locations):
-    # Open-Meteo's public elevation endpoint accepts comma-separated coordinates.
+    """Fetch terrain heights in batches with bounded retries for transient API/TLS failures."""
     vals = []
-    # Keep requests short enough for common URL limits; the API accepts coordinate lists.
-    for start in range(0, len(locations), 80):
-        batch = locations[start:start+80]
+    batch_size = 80
+    total_batches = math.ceil(len(locations) / batch_size)
+    for start in range(0, len(locations), batch_size):
+        batch = locations[start:start + batch_size]
         params = {
             "latitude": ",".join(f"{lat:.6f}" for lat, lon in batch),
             "longitude": ",".join(f"{lon:.6f}" for lat, lon in batch),
         }
         url = "https://api.open-meteo.com/v1/elevation?" + urllib.parse.urlencode(params)
         last = None
-        for attempt in range(4):
+        for attempt in range(6):
             try:
-                req = urllib.request.Request(url, headers={"User-Agent":"Brokeville2-3D-map/1.0"})
-                with urllib.request.urlopen(req, timeout=45) as resp:
+                req = urllib.request.Request(
+                    url,
+                    headers={
+                        "User-Agent": "Brokeville2-3D-map/1.1",
+                        "Accept": "application/json",
+                        "Connection": "close",
+                    },
+                )
+                with urllib.request.urlopen(req, timeout=25 + min(attempt * 5, 20)) as resp:
                     data = json.load(resp)
                 elevations = data.get("elevation")
                 if not isinstance(elevations, list):
                     elevations = [elevations]
                 if len(elevations) != len(batch) or any(v is None for v in elevations):
-                    raise ValueError(f"Elevation API returned {len(elevations)} values for {len(batch)} points")
+                    raise ValueError(
+                        f"Elevation API returned {len(elevations)} values for {len(batch)} points"
+                    )
                 vals.extend(float(v) for v in elevations)
                 last = None
                 break
             except Exception as exc:
                 last = exc
-                time.sleep(2 + attempt * 2)
+                if attempt < 5:
+                    delay = min(3 * (2 ** attempt), 45)
+                    print(
+                        f"Elevation batch {start // batch_size + 1}/{total_batches} "
+                        f"failed (attempt {attempt + 1}/6): {exc}; retrying in {delay}s",
+                        flush=True,
+                    )
+                    time.sleep(delay)
         if last:
-            raise RuntimeError(f"Elevation lookup failed: {last}")
-        time.sleep(0.2)
+            raise RuntimeError(
+                f"Elevation lookup failed for batch {start // batch_size + 1}: {last}"
+            ) from last
+        if (start // batch_size + 1) % 10 == 0 or start + batch_size >= len(locations):
+            print(
+                f"Fetched elevation points: {min(start + len(batch), len(locations))}/"
+                f"{len(locations)}",
+                flush=True,
+            )
+        time.sleep(0.35)
     return vals
-
 
 def polygon_parts(geom):
     if isinstance(geom, Polygon):
